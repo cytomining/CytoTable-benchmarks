@@ -158,6 +158,7 @@ fig = px.line(
     color_discrete_sequence=px.colors.qualitative.T10,
 )
 fig.update_layout(
+    legend_title_text="Read Time Duration",
     legend=dict(x=0.01, y=0.98, bgcolor="rgba(255,255,255,0.8)"),
     font=dict(
         size=20,  # global font size
@@ -185,6 +186,7 @@ fig = px.bar(
     color_discrete_sequence=px.colors.qualitative.T10,
 )
 fig.update_layout(
+    legend_title_text="In-memory Data Size",
     legend=dict(x=0.58, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
     font=dict(
         size=20,  # global font size
