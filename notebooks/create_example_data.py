@@ -32,8 +32,14 @@ from utilities import download_file
 url = "https://github.com/cytomining/CytoTable/blob/main/tests/data/cellprofiler/NF1_SchwannCell_data/all_cellprofiler.sqlite?raw=true"
 orig_filepath = "./examples/data/all_cellprofiler.sqlite"
 
+# create a data dir
+pathlib.Path(orig_filepath).parent.mkdir(exist_ok=True)
+
 # download the original file
 download_file(url, orig_filepath)
+
+# create a duplicate file for use in looped testing
+shutil.copy(orig_filepath, orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate"))
 
 
 def multiply_database_size(filename: str, multiplier: int = 2):

@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.9.0,<3.11.0"
 jupyterlab = "^3.0.0"
-cytotable = "^0.0.1"
+cytotable = {git = "https://github.com/cytomining/CytoTable.git"}
 black = "^23.3.0"
 isort = "^5.12.0"
 jupyterlab-code-formatter = "^2.2.1"
