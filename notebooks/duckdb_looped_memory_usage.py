@@ -13,9 +13,9 @@
 #     name: ipyflow
 # ---
 
-# # CytoTable looped memory usage analysis
+# # DuckDB looped memory usage analysis
 #
-# This notebook explores how CytoTable uses memory when implemented in a loop. The work is related to [CytoTable#75](https://github.com/cytomining/CytoTable/issues/75).
+# This notebook explores how DuckDB uses memory when reading parquet files implemented in a loop. The work is related to [CytoTable#75](https://github.com/cytomining/CytoTable/issues/75).
 
 # +
 import io
@@ -29,8 +29,8 @@ from IPython.display import IFrame
 
 # setup variables for use below
 target_python_list = [
-    "./examples/loop_cytotable_memory_one.py",
-    "./examples/loop_cytotable_memory_two.py",
+    "./examples/duckdb_parquet_reads_no_close.py",
+    "./examples/duckdb_parquet_reads_close.py",
 ]
 target_bin_list = [
     f"{pathlib.Path(target).name}.memray.bin" for target in target_python_list
@@ -72,5 +72,3 @@ IFrame(target_html_list[0], width="100%", height="1000")
 
 # display flamegraph results
 IFrame(target_html_list[1], width="100%", height="1000")
-
-

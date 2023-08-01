@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.6
+#       jupytext_version: 1.14.7
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -25,6 +25,7 @@ import pathlib
 import shutil
 import sqlite3
 
+import duckdb
 import requests
 from utilities import download_file
 # -
@@ -39,7 +40,10 @@ pathlib.Path(orig_filepath).parent.mkdir(exist_ok=True)
 download_file(url, orig_filepath)
 
 # create a duplicate file for use in looped testing
-shutil.copy(orig_filepath, orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate"))
+shutil.copy(
+    orig_filepath,
+    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate"),
+)
 
 
 def multiply_database_size(filename: str, multiplier: int = 2):
@@ -102,3 +106,25 @@ for _ in range(0, 5):
     multiply_database_size(filename=new_filepath, multiplier=2)
     previous_filepath = new_filepath
     number *= 2
+
+# add example parquet file
+duckdb.connect().execute(
+    f"""
+    /* Install and load sqlite plugin for duckdb */
+    INSTALL sqlite_scanner;
+    LOAD sqlite_scanner;
+
+    /* Copy content from nuclei table to parquet file */
+    COPY (select * from sqlite_scan('{orig_filepath}', 'Per_Nuclei')) 
+    TO '{orig_filepath + '.nuclei.parquet'}'
+    (FORMAT PARQUET);
+    """,
+).close()
+
+# create a duplicate file for use in looped testing
+shutil.copy(
+    orig_filepath + ".nuclei.parquet",
+    orig_filepath + ".nuclei-copy.parquet",
+)
+
+
