@@ -29,6 +29,56 @@ from IPython.display import IFrame
 
 # setup variables for use below
 target_python_list = [
+    "./examples/duckdb_parquet_reads_no_close-numeric.py",
+    "./examples/duckdb_parquet_reads_close-numeric.py",
+]
+target_bin_list = [
+    f"{pathlib.Path(target).name}.memray.bin" for target in target_python_list
+]
+target_html_list = [f"{target_bin}.html" for target_bin in target_bin_list]
+
+for target_python, target_bin, target_html in zip(
+    target_python_list, target_bin_list, target_html_list
+):
+    # create memory profile
+    memray_run = subprocess.run(
+        [
+            "memray",
+            "run",
+            "--output",
+            target_bin,
+            "--force",
+            "--native",
+            "--follow-fork",
+            "--trace-python-allocators",
+            target_python,
+        ],
+        capture_output=True,
+        check=True,
+    )
+    # create flamegraph data
+    memray_flamegraph = subprocess.run(
+        [
+            "memray",
+            "flamegraph",
+            "--output",
+            target_html,
+            "--force",
+            "--leaks",
+            target_bin,
+        ],
+        capture_output=True,
+        check=True,
+    )
+
+# display flamegraph results
+IFrame(target_html_list[0], width="100%", height="1000")
+
+# display flamegraph results
+IFrame(target_html_list[1], width="100%", height="1000")
+
+# setup variables for use below
+target_python_list = [
     "./examples/duckdb_parquet_reads_no_close.py",
     "./examples/duckdb_parquet_reads_close.py",
 ]

@@ -1,5 +1,5 @@
 """
-An example to test duckdb execution without closing connections
+An example to test duckdb execution with closed connections
 using parquet files.
 """
 import multiprocessing
@@ -10,7 +10,7 @@ import duckdb
 MAX_THREADS = multiprocessing.cpu_count()
 
 
-def _duckdb_reader() -> duckdb.DuckDBPyConnection:
+def _duckdb_reader(sql_stmt: str) -> duckdb.DuckDBPyConnection:
     """
     Creates a DuckDB connection with the
     sqlite_scanner installed and loaded.
@@ -19,7 +19,8 @@ def _duckdb_reader() -> duckdb.DuckDBPyConnection:
         duckdb.DuckDBPyConnection
     """
 
-    return duckdb.connect().execute(
+    # setup a duckdb client with various configuration options
+    duckdb_client = duckdb.connect().execute(
         # note: we use an f-string here to
         # dynamically configure threads as appropriate
         f"""
@@ -50,6 +51,14 @@ def _duckdb_reader() -> duckdb.DuckDBPyConnection:
         """,
     )
 
+    # gather the result from the duckdb connection
+    result = duckdb_client.execute(sql_stmt).arrow()
+
+    # explicitly close the connection before returning result
+    duckdb_client.close()
+
+    return result
+
 
 for parquet_file in [
     "./examples/data/all_cellprofiler.sqlite.nuclei.parquet",
@@ -58,4 +67,4 @@ for parquet_file in [
     sql_stmt = f"""
     SELECT * from '{parquet_file}';
     """
-    _duckdb_reader().execute(sql_stmt)
+    _duckdb_reader(sql_stmt)

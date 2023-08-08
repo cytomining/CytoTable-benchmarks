@@ -26,7 +26,10 @@ import shutil
 import sqlite3
 
 import duckdb
+import numpy as np
+import pyarrow as pa
 import requests
+from pyarrow import csv, parquet
 from utilities import download_file
 # -
 
@@ -125,6 +128,28 @@ duckdb.connect().execute(
 shutil.copy(
     orig_filepath + ".nuclei.parquet",
     orig_filepath + ".nuclei-copy.parquet",
+)
+
+# create randomized number data and related pyarrow table
+tbl_numeric = pa.Table.from_arrays(
+    [pa.array(np.random.rand(1000, 100)[:, i]) for i in range(100)],
+    names=[f"Column_{i}" for i in range(100)],
+)
+# Create a table and write it to file
+parquet.write_table(
+    table=tbl_numeric,
+    where="./examples/data/random_number_data.parquet",
+)
+csv.write_csv(data=tbl_numeric, output_file="./examples/data/random_number_data.csv")
+
+# create a duplicate file for use in looped testing
+shutil.copy(
+    "./examples/data/random_number_data.parquet",
+    "./examples/data/random_number_data-copy.parquet",
+)
+shutil.copy(
+    "./examples/data/random_number_data.csv",
+    "./examples/data/random_number_data-copy.csv",
 )
 
 
