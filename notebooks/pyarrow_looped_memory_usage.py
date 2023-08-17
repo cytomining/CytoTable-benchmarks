@@ -13,9 +13,9 @@
 #     name: ipyflow
 # ---
 
-# # CytoTable looped memory usage analysis
+# # PyArrow looped memory usage analysis
 #
-# This notebook explores how CytoTable uses memory when implemented in a loop. The work is related to [CytoTable#75](https://github.com/cytomining/CytoTable/issues/75).
+# This notebook explores how PyArrow uses memory when reading parquet files implemented in a loop. The work is related to [CytoTable#75](https://github.com/cytomining/CytoTable/issues/75).
 
 # +
 import io
@@ -29,8 +29,12 @@ from IPython.display import IFrame
 
 # setup variables for use below
 target_python_list = [
-    "./examples/loop_cytotable_memory_one.py",
-    "./examples/loop_cytotable_memory_two.py",
+    "./examples/pyarrow_parquet_reads_malloc.py",
+    "./examples/pyarrow_parquet_reads_mimalloc.py",
+    "./examples/pyarrow_parquet_reads_jemalloc.py",
+    "./examples/pyarrow_parquet_reads_malloc_memorymap.py",
+    "./examples/pyarrow_parquet_reads_mimalloc_memorymap.py",
+    "./examples/pyarrow_parquet_reads_jemalloc_memorymap.py",
 ]
 target_bin_list = [
     f"{pathlib.Path(target).name}.memray.bin" for target in target_python_list
@@ -48,6 +52,8 @@ for target_python, target_bin, target_html in zip(
             "--output",
             target_bin,
             "--force",
+            "--native",
+            "--follow-fork",
             target_python,
         ],
         capture_output=True,
@@ -68,7 +74,27 @@ for target_python, target_bin, target_html in zip(
     )
 
 # display flamegraph results
+print(target_html_list[0])
 IFrame(target_html_list[0], width="100%", height="1000")
 
 # display flamegraph results
+print(target_html_list[1])
 IFrame(target_html_list[1], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[2])
+IFrame(target_html_list[2], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[3])
+IFrame(target_html_list[3], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[4])
+IFrame(target_html_list[4], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[5])
+IFrame(target_html_list[5], width="100%", height="1000")
+
+
