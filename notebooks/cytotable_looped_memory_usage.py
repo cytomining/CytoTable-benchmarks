@@ -55,6 +55,19 @@ for target_python, target_bin, target_html in zip(
         check=True,
         # env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "jemalloc"}},
     )
+
+    print(
+        " ".join(
+            [
+                "memray",
+                "run",
+                "--output",
+                target_bin,
+                "--force",
+                target_python,
+            ]
+        )
+    )
     # create flamegraph data
     memray_flamegraph = subprocess.run(
         [
@@ -67,6 +80,18 @@ for target_python, target_bin, target_html in zip(
         ],
         capture_output=True,
         check=True,
+    )
+    print(
+        " ".join(
+            [
+                "memray",
+                "flamegraph",
+                "--output",
+                target_html,
+                "--force",
+                target_bin,
+            ]
+        )
     )
 
 # display flamegraph results

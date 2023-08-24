@@ -769,7 +769,7 @@ pyarrow = "^12.0.0"
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
 reference = "parsl-clear"
-resolved_reference = "34bddedda48b1570fe0fc6497058a782668569e9"
+resolved_reference = "a7e2f942988452fe26bf0f44ca2ff02e352ac1f2"
 
 [[package]]
 name = "debugpy"
