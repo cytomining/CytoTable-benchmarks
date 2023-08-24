@@ -768,8 +768,8 @@ pyarrow = "^12.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
-reference = "parsl-reuse-config"
-resolved_reference = "61af06e2f897b945cd71b0ceb812dc6adbf089de"
+reference = "combine-dictionary-references"
+resolved_reference = "a3c82d3e6dcd303049d578810a07a66544d91394"
 
 [[package]]
 name = "debugpy"
@@ -2578,6 +2578,20 @@ files = [
 ]
 
 [[package]]
+name = "objgraph"
+version = "3.6.0"
+description = "Draws Python object reference graphs with graphviz"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "objgraph-3.6.0-py2.py3-none-any.whl", hash = "sha256:7c4aa57754c41bdd4ba67a8edfb44e45e248a1474444d0b9adca3cfd2717c485"},
+    {file = "objgraph-3.6.0.tar.gz", hash = "sha256:369567c37b4f2f928160b6f6ededcbea8fc7e929831877fd1056c78a900c17d3"},
+]
+
+[package.extras]
+ipython = ["graphviz"]
+
+[[package]]
 name = "overrides"
 version = "7.4.0"
 description = "A decorator to automatically detect mismatch when overriding a method."
@@ -4287,4 +4301,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "483930cbdc55eee72efbf6e48f890a996b4d6c0688ba475a2050b6bb910eb79a"
+content-hash = "1e51172af2312e1f0efcfe5608a42789d9d03e25ff464e0c82c798dcb5544301"
