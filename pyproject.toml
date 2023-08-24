@@ -7,7 +7,7 @@ license = "BSD 3-Clause"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9.0,<3.10.0"
+python = ">=3.9,<3.13"
 jupyterlab = "^3.0.0"
 cytotable = {git = "https://github.com/d33bs/CytoTable.git", branch="parsl-clear" }
 black = "^23.3.0"
