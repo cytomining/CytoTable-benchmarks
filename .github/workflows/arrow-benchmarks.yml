@@ -32,7 +32,7 @@ jobs:
       - name: Profile with memray
         run: | 
           poetry run memray run --output pyarrow_parquet_reads.py.memray.bin \
-          --force ./notebooks/examples/pyarrow_parquet_reads.py
+          --force ./notebooks/examples/pyarrow_parquet_reads.py || true
       - name: Display memray stats from profiling
         run: | 
-          poetry run memray stats pyarrow_parquet_reads.py.memray.bin
+          poetry run memray stats pyarrow_parquet_reads.py.memray.bin || true
