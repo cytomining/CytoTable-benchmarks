@@ -768,8 +768,8 @@ pyarrow = "^12.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
-reference = "dependency-updates"
-resolved_reference = "13f9b9c6f98ae37fc059679e752489cda3f2cb53"
+reference = "parsl-clear"
+resolved_reference = "34bddedda48b1570fe0fc6497058a782668569e9"
 
 [[package]]
 name = "debugpy"
@@ -4278,4 +4278,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.0,<3.10.0"
-content-hash = "ec1df339480c75236a358dbe1ec524c8fa243ca61913b01e1bc2fe806288610f"
+content-hash = "f8ca439f4bacc87d71dc047acce4d665fcb722c11792fd6d15067a16253a1e64"

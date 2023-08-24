@@ -21,6 +21,7 @@
 import io
 import itertools
 import json
+import os
 import pathlib
 import subprocess
 
@@ -52,6 +53,7 @@ for target_python, target_bin, target_html in zip(
         ],
         capture_output=True,
         check=True,
+        # env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "jemalloc"}},
     )
     # create flamegraph data
     memray_flamegraph = subprocess.run(
@@ -68,7 +70,11 @@ for target_python, target_bin, target_html in zip(
     )
 
 # display flamegraph results
+print(target_html_list[0])
 IFrame(target_html_list[0], width="100%", height="1000")
 
 # display flamegraph results
+print(target_html_list[1])
 IFrame(target_html_list[1], width="100%", height="1000")
+
+
