@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.7
+#       jupytext_version: 1.15.0
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -46,6 +46,14 @@ download_file(url, orig_filepath)
 shutil.copy(
     orig_filepath,
     orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate"),
+)
+shutil.copy(
+    orig_filepath,
+    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate_two"),
+)
+shutil.copy(
+    orig_filepath,
+    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate_three"),
 )
 
 

@@ -53,7 +53,7 @@ for target_python, target_bin, target_html in zip(
         ],
         capture_output=True,
         check=True,
-        # env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "jemalloc"}},
+        env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "jemalloc"}},
     )
 
     # create flamegraph data
@@ -78,4 +78,82 @@ IFrame(target_html_list[0], width="100%", height="1000")
 print(target_html_list[1])
 IFrame(target_html_list[1], width="100%", height="1000")
 
+for target_python, target_bin, target_html in zip(
+    target_python_list, target_bin_list, target_html_list
+):
+    # create memory profile
+    memray_run = subprocess.run(
+        [
+            "memray",
+            "run",
+            "--output",
+            target_bin,
+            "--force",
+            target_python,
+        ],
+        capture_output=True,
+        check=True,
+        env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "mimalloc"}},
+    )
 
+    # create flamegraph data
+    memray_flamegraph = subprocess.run(
+        [
+            "memray",
+            "flamegraph",
+            "--output",
+            target_html,
+            "--force",
+            target_bin,
+        ],
+        capture_output=True,
+        check=True,
+    )
+
+# display flamegraph results
+print(target_html_list[0])
+IFrame(target_html_list[0], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[1])
+IFrame(target_html_list[1], width="100%", height="1000")
+
+for target_python, target_bin, target_html in zip(
+    target_python_list, target_bin_list, target_html_list
+):
+    # create memory profile
+    memray_run = subprocess.run(
+        [
+            "memray",
+            "run",
+            "--output",
+            target_bin,
+            "--force",
+            target_python,
+        ],
+        capture_output=True,
+        check=True,
+        env={**dict(os.environ), **{"ARROW_DEFAULT_MEMORY_POOL": "system"}},
+    )
+
+    # create flamegraph data
+    memray_flamegraph = subprocess.run(
+        [
+            "memray",
+            "flamegraph",
+            "--output",
+            target_html,
+            "--force",
+            target_bin,
+        ],
+        capture_output=True,
+        check=True,
+    )
+
+# display flamegraph results
+print(target_html_list[0])
+IFrame(target_html_list[0], width="100%", height="1000")
+
+# display flamegraph results
+print(target_html_list[1])
+IFrame(target_html_list[1], width="100%", height="1000")
