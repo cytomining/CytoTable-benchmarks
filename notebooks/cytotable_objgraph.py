@@ -18,12 +18,15 @@
 # This notebook explores how CytoTable objects operate. The work is related to [CytoTable#75](https://github.com/cytomining/CytoTable/issues/75).
 
 # +
+import gc
 import shutil
 import tempfile
 
 import cytotable
 import objgraph
 from IPython.display import Image
+
+gc.set_debug(gc.DEBUG_LEAK)
 # -
 
 # create a list of files to reference
@@ -75,6 +78,29 @@ objgraph.show_refs(roots[:3], refcounts=True, filename="roots.png")
 
 objgraph.show_most_common_types(objects=roots, shortnames=False)
 
-print(objgraph.by_type(typename="dict", objects=roots)[:20])
+print(objgraph.by_type(typename="dict", objects=roots)[:5])
+
+print(objgraph.by_type(typename="cell", objects=roots)[:5])
+
+# +
+# Explicitly collect garbage and check for memory leak warnings
+import sys
+
+import pandas as pd
+
+collected = gc.collect()
+if gc.garbage:
+    print(f"Memory leak detected: {len(gc.garbage)} objects")
+    df = pd.DataFrame(
+        [
+            {"type": type(obj), "refcount": sys.getrefcount(obj), "repr": repr(obj)}
+            for obj in gc.garbage
+        ]
+    )
+
+df.head()
+# -
+
+df.sort_values(by="refcount", ascending=False).drop_duplicates()
 
 
