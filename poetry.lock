@@ -768,8 +768,8 @@ pyarrow = "^12.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
-reference = "combine-dictionary-references"
-resolved_reference = "a3c82d3e6dcd303049d578810a07a66544d91394"
+reference = "no-duckdb-threads"
+resolved_reference = "58d5e9667318a50cf4561ec3c241374d9bd976a6"
 
 [[package]]
 name = "debugpy"
@@ -4301,4 +4301,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "1e51172af2312e1f0efcfe5608a42789d9d03e25ff464e0c82c798dcb5544301"
+content-hash = "20245081b77531e9f06fe1b589764cf298358c2411be8bb6a5feedc359d11a7f"
