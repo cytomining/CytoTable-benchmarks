@@ -19,12 +19,25 @@
 
 # +
 import gc
+import logging
+import os
 import shutil
+import sys
 import tempfile
 
 import cytotable
 import objgraph
+import parsl
 from IPython.display import Image
+
+
+class ExcludeCollectableMessages(logging.Filter):
+    def filter(self, record):
+        return not record.getMessage().startswith("gc: collectable")
+
+
+logger = logging.getLogger(__name__)
+logger.addFilter(ExcludeCollectableMessages)
 
 gc.set_debug(gc.DEBUG_LEAK)
 # -
@@ -93,7 +106,12 @@ if gc.garbage:
     print(f"Memory leak detected: {len(gc.garbage)} objects")
     df = pd.DataFrame(
         [
-            {"type": type(obj), "refcount": sys.getrefcount(obj), "repr": repr(obj)}
+            {
+                "id": id(obj),
+                "type": type(obj),
+                "refcount": sys.getrefcount(obj),
+                "repr": repr(obj),
+            }
             for obj in gc.garbage
         ]
     )
@@ -101,6 +119,8 @@ if gc.garbage:
 df.head()
 # -
 
-df.sort_values(by="refcount", ascending=False).drop_duplicates()
+df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id").head(
+    30
+).loc[3109]["repr"]
 
 

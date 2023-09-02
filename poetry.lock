@@ -768,8 +768,8 @@ pyarrow = "^12.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
-reference = "no-duckdb-threads"
-resolved_reference = "58d5e9667318a50cf4561ec3c241374d9bd976a6"
+reference = "gc-object-leaks"
+resolved_reference = "b09080b0ba4020b1b60ab61bbbdcf9e7d41921fb"
 
 [[package]]
 name = "debugpy"
@@ -4301,4 +4301,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "20245081b77531e9f06fe1b589764cf298358c2411be8bb6a5feedc359d11a7f"
+content-hash = "f2c7daab471503c8a387d307c4795c464151730942b18b9fdacbe90f9db9c5c8"
