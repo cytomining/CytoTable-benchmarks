@@ -100,6 +100,7 @@ print(objgraph.by_type(typename="cell", objects=roots)[:5])
 import sys
 
 import pandas as pd
+from pympler import asizeof
 
 collected = gc.collect()
 if gc.garbage:
@@ -111,6 +112,7 @@ if gc.garbage:
                 "type": type(obj),
                 "refcount": sys.getrefcount(obj),
                 "repr": repr(obj),
+                "size": sys.getsizeof(obj),
             }
             for obj in gc.garbage
         ]
@@ -119,8 +121,12 @@ if gc.garbage:
 df.head()
 # -
 
-df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id").head(
-    30
-).loc[3109]["repr"]
+df.sort_values(by=["size","refcount"], ascending=False).drop_duplicates(subset="id").head(30)
+
+df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id")[
+    "type"
+].value_counts()
+
+# !pip install pympler
 
 
