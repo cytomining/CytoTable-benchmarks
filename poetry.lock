@@ -769,7 +769,7 @@ pyarrow = "^12.0.0"
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
 reference = "gc-object-leaks"
-resolved_reference = "b09080b0ba4020b1b60ab61bbbdcf9e7d41921fb"
+resolved_reference = "e7cee61e39cd50f6095fa9d2514a64bcb54640ef"
 
 [[package]]
 name = "debugpy"

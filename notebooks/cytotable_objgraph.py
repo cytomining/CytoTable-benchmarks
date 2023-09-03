@@ -121,12 +121,22 @@ if gc.garbage:
 df.head()
 # -
 
-df.sort_values(by=["size","refcount"], ascending=False).drop_duplicates(subset="id").head(30)
+df.sort_values(by=["size", "refcount"], ascending=False).drop_duplicates(
+    subset="id"
+).head(30)
+
+df[
+    ~df["repr"].str.contains("AppFuture") & ~df["repr"].str.contains("deque")
+].sort_values(by=["size", "refcount"], ascending=False).drop_duplicates(
+    subset="id"
+).head(
+    30
+)
 
 df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id")[
     "type"
 ].value_counts()
 
-# !pip install pympler
+gc.collect()
 
 
