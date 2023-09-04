@@ -33,6 +33,10 @@ list_of_sqlite_files = [
     "./examples/data/all_cellprofiler_duplicate.sqlite",
     "./examples/data/all_cellprofiler_duplicate_two.sqlite",
     "./examples/data/all_cellprofiler_duplicate_three.sqlite",
+    "./examples/data/all_cellprofiler.sqlite",
+    "./examples/data/all_cellprofiler_duplicate.sqlite",
+    "./examples/data/all_cellprofiler_duplicate_two.sqlite",
+    "./examples/data/all_cellprofiler_duplicate_three.sqlite",
 ]
 
 # create a list of temporary directories to use for destination paths

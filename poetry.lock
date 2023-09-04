@@ -769,7 +769,7 @@ pyarrow = "^12.0.0"
 type = "git"
 url = "https://github.com/d33bs/CytoTable.git"
 reference = "gc-object-leaks"
-resolved_reference = "e7cee61e39cd50f6095fa9d2514a64bcb54640ef"
+resolved_reference = "d95db405269bff72447b2bd7c82c7cdf202f6452"
 
 [[package]]
 name = "debugpy"
@@ -2714,13 +2714,13 @@ invoke = ["invoke (>=2.0)"]
 
 [[package]]
 name = "parsl"
-version = "2023.8.14"
+version = "2023.8.28"
 description = "Simple data dependent workflows in Python"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "parsl-2023.8.14-py3-none-any.whl", hash = "sha256:bd4a16257b8ca8c31c4dad7ad5bc3657c0b04c59d4b17a6d471af9be9a01533f"},
-    {file = "parsl-2023.8.14.tar.gz", hash = "sha256:45483647bbaa016647550285259696e2bcd14492340cf829a4a43baad78b93f7"},
+    {file = "parsl-2023.8.28-py3-none-any.whl", hash = "sha256:fed00711e7e4321924978d66f30d4b79e1317c7ad016d384ffa4be2321ca0167"},
+    {file = "parsl-2023.8.28.tar.gz", hash = "sha256:62ba33398e9900a38be4df89e3f6927ae4c52b6916657ac212a92826a64c4304"},
 ]
 
 [package.dependencies]

@@ -27,17 +27,10 @@ import tempfile
 
 import cytotable
 import objgraph
+import pandas as pd
 import parsl
 from IPython.display import Image
-
-
-class ExcludeCollectableMessages(logging.Filter):
-    def filter(self, record):
-        return not record.getMessage().startswith("gc: collectable")
-
-
-logger = logging.getLogger(__name__)
-logger.addFilter(ExcludeCollectableMessages)
+from pympler import asizeof
 
 gc.set_debug(gc.DEBUG_LEAK)
 # -
@@ -46,7 +39,6 @@ gc.set_debug(gc.DEBUG_LEAK)
 list_of_sqlite_files = [
     "./examples/data/all_cellprofiler.sqlite",
 ]
-graph_img = "cytotable-object-graph.png"
 
 cytotable.convert(
     source_path="./examples/data/all_cellprofiler.sqlite",
@@ -55,53 +47,14 @@ cytotable.convert(
     preset="cellprofiler_sqlite_pycytominer",
 )
 
-objgraph.show_refs(cytotable, refcounts=True, filename=graph_img)
-
 cytotable.convert(
     source_path="./examples/data/all_cellprofiler.sqlite",
     dest_path="./examples/data/test-result.parquet",
     dest_datatype="parquet",
     preset="cellprofiler_sqlite_pycytominer",
 )
-
-print(objgraph.show_growth(limit=3), end="\n\n")
-
-cytotable.convert(
-    source_path="./examples/data/all_cellprofiler.sqlite",
-    dest_path="./examples/data/test-result.parquet",
-    dest_datatype="parquet",
-    preset="cellprofiler_sqlite_pycytominer",
-)
-
-print(objgraph.show_growth(limit=3), end="\n\n")
-
-cytotable.convert(
-    source_path="./examples/data/all_cellprofiler.sqlite",
-    dest_path="./examples/data/test-result.parquet",
-    dest_datatype="parquet",
-    preset="cellprofiler_sqlite_pycytominer",
-)
-
-print(objgraph.show_growth(limit=3), end="\n\n")
-
-objgraph.show_refs(cytotable, refcounts=True, filename=graph_img)
-
-roots = objgraph.get_leaking_objects()
-objgraph.show_refs(roots[:3], refcounts=True, filename="roots.png")
-
-objgraph.show_most_common_types(objects=roots, shortnames=False)
-
-print(objgraph.by_type(typename="dict", objects=roots)[:5])
-
-print(objgraph.by_type(typename="cell", objects=roots)[:5])
 
 # +
-# Explicitly collect garbage and check for memory leak warnings
-import sys
-
-import pandas as pd
-from pympler import asizeof
-
 collected = gc.collect()
 if gc.garbage:
     print(f"Memory leak detected: {len(gc.garbage)} objects")
@@ -131,12 +84,46 @@ df[
     subset="id"
 ).head(
     30
-)
+).to_csv("leaks.csv")
+
+{
+    "source_group_name": "Per_image.sqlite",
+    "source": {
+        "source_path": PosixPath(
+            "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/all_cellprofiler.sqlite"
+        ),
+        "table_name": "Per_Image",
+        "offsets": [0],
+    },
+    "chunk_size": 1000,
+    "offset": 0,
+    "dest_path": PosixPath(
+        "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/test-result.parquet"
+    ),
+    "data_type_cast_map": None,
+}
 
 df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id")[
     "type"
 ].value_counts()
 
-gc.collect()
+df[df["id"] == 5304345792].sort_values(by="refcount", ascending=False).iloc[0]["repr"]
+
+{
+    "source_group_name": "Per_nuclei.sqlite",
+    "source": {
+        "source_path": PosixPath(
+            "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/all_cellprofiler.sqlite"
+        ),
+        "table_name": "Per_Nuclei",
+        "offsets": [0],
+    },
+    "chunk_size": 1000,
+    "offset": 0,
+    "dest_path": PosixPath(
+        "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/test-result.parquet"
+    ),
+    "data_type_cast_map": None,
+}
 
 
