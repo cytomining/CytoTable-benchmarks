@@ -3,9 +3,7 @@ name: arrow benchmarks
 
 on:
   push:
-    branches: [main, explore-loop-memory-usage]
-  pull_request:
-    branches: [main]
+    branches: [explore-loop-memory-usage]
 
 jobs:
   run_arrow_benchmarks:
