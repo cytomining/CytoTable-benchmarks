@@ -41,6 +41,14 @@ target_html_list = [f"{target_bin}.html" for target_bin in target_bin_list]
 for target_python, target_bin, target_html in zip(
     target_python_list, target_bin_list, target_html_list
 ):
+    print(" ".join([
+            "memray",
+            "run",
+            "--output",
+            target_bin,
+            "--force",
+            target_python,
+        ]))
     # create memory profile
     memray_run = subprocess.run(
         [
@@ -157,3 +165,12 @@ IFrame(target_html_list[0], width="100%", height="1000")
 # display flamegraph results
 print(target_html_list[1])
 IFrame(target_html_list[1], width="100%", height="1000")
+
+import parsl
+dfk = parsl.load()
+type(dfk)
+
+
+int(4.3)
+
+

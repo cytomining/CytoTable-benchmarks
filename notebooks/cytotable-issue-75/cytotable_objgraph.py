@@ -19,26 +19,12 @@
 
 # +
 import gc
-import logging
-import os
-import shutil
 import sys
-import tempfile
 
 import cytotable
-import objgraph
 import pandas as pd
-import parsl
-from IPython.display import Image
-from pympler import asizeof
 
 gc.set_debug(gc.DEBUG_LEAK)
-# -
-
-# create a list of files to reference
-list_of_sqlite_files = [
-    "./examples/data/all_cellprofiler.sqlite",
-]
 
 cytotable.convert(
     source_path="./examples/data/all_cellprofiler.sqlite",
@@ -46,6 +32,32 @@ cytotable.convert(
     dest_datatype="parquet",
     preset="cellprofiler_sqlite_pycytominer",
 )
+
+collected = gc.collect()
+if gc.garbage:
+    print(f"Memory leak detected: {len(gc.garbage)} objects")
+    df = pd.DataFrame(
+        [
+            {
+                "id": id(obj),
+                "type": type(obj),
+                "refcount": sys.getrefcount(obj),
+                "repr": repr(obj),
+                "size": sys.getsizeof(obj),
+            }
+            for obj in gc.garbage
+        ]
+    )
+
+df.head()
+# -
+
+# create a list of files to reference
+list_of_sqlite_files = [
+    "./examples/data/all_cellprofiler.sqlite",
+]
+
+
 
 cytotable.convert(
     source_path="./examples/data/all_cellprofiler.sqlite",
@@ -84,7 +96,9 @@ df[
     subset="id"
 ).head(
     30
-).to_csv("leaks.csv")
+).to_csv(
+    "leaks.csv"
+)
 
 {
     "source_group_name": "Per_image.sqlite",
