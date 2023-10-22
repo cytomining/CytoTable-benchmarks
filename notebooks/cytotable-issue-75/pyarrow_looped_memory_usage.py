@@ -96,5 +96,3 @@ IFrame(target_html_list[4], width="100%", height="1000")
 # display flamegraph results
 print(target_html_list[5])
 IFrame(target_html_list[5], width="100%", height="1000")
-
-

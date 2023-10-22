@@ -165,12 +165,3 @@ IFrame(target_html_list[0], width="100%", height="1000")
 # display flamegraph results
 print(target_html_list[1])
 IFrame(target_html_list[1], width="100%", height="1000")
-
-import parsl
-dfk = parsl.load()
-type(dfk)
-
-
-int(4.3)
-
-
