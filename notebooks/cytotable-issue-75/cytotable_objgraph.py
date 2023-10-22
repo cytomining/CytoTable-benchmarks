@@ -19,6 +19,7 @@
 
 # +
 import gc
+import pathlib
 import sys
 
 import cytotable
@@ -27,7 +28,7 @@ import pandas as pd
 gc.set_debug(gc.DEBUG_LEAK)
 
 cytotable.convert(
-    source_path="./examples/data/all_cellprofiler.sqlite",
+    source_path="../examples/data/all_cellprofiler.sqlite",
     dest_path="./examples/data/test-result.parquet",
     dest_datatype="parquet",
     preset="cellprofiler_sqlite_pycytominer",
@@ -54,13 +55,11 @@ df.head()
 
 # create a list of files to reference
 list_of_sqlite_files = [
-    "./examples/data/all_cellprofiler.sqlite",
+    "../examples/data/all_cellprofiler.sqlite",
 ]
 
-
-
 cytotable.convert(
-    source_path="./examples/data/all_cellprofiler.sqlite",
+    source_path="../examples/data/all_cellprofiler.sqlite",
     dest_path="./examples/data/test-result.parquet",
     dest_datatype="parquet",
     preset="cellprofiler_sqlite_pycytominer",
@@ -100,44 +99,6 @@ df[
     "leaks.csv"
 )
 
-{
-    "source_group_name": "Per_image.sqlite",
-    "source": {
-        "source_path": PosixPath(
-            "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/all_cellprofiler.sqlite"
-        ),
-        "table_name": "Per_Image",
-        "offsets": [0],
-    },
-    "chunk_size": 1000,
-    "offset": 0,
-    "dest_path": PosixPath(
-        "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/test-result.parquet"
-    ),
-    "data_type_cast_map": None,
-}
-
 df.sort_values(by="refcount", ascending=False).drop_duplicates(subset="id")[
     "type"
 ].value_counts()
-
-df[df["id"] == 5304345792].sort_values(by="refcount", ascending=False).iloc[0]["repr"]
-
-{
-    "source_group_name": "Per_nuclei.sqlite",
-    "source": {
-        "source_path": PosixPath(
-            "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/all_cellprofiler.sqlite"
-        ),
-        "table_name": "Per_Nuclei",
-        "offsets": [0],
-    },
-    "chunk_size": 1000,
-    "offset": 0,
-    "dest_path": PosixPath(
-        "/Users/dabu5788/Documents/work/CytoTable-benchmarks-d33bs/notebooks/examples/data/test-result.parquet"
-    ),
-    "data_type_cast_map": None,
-}
-
-
