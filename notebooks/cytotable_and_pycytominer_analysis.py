@@ -13,9 +13,9 @@
 #     name: ipyflow
 # ---
 
-# # CytoTable and Pycytominer Performance Comparisons
+# # CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) Performance Comparisons
 #
-# This notebook explores CytoTable and Pycytominer usage with datasets of varying size to help describe performance impacts.
+# This notebook explores CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) usage with datasets of varying size to help describe performance impacts.
 
 # set ipyflow reactive mode
 # %flow mode reactive
