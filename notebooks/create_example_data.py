@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.0
+#       jupytext_version: 1.15.2
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -107,11 +107,11 @@ def multiply_database_size(filename: str, multiplier: int = 2):
             )
 
 
-# loop through 5 times, copying the database and
+# loop for copying the database and
 # doubling the database size each time
 number = 2
 previous_filepath = orig_filepath
-for _ in range(0, 5):
+for _ in range(0, 9):
     new_filepath = orig_filepath.replace(".sqlite", f"-x{number}.sqlite")
     shutil.copy(previous_filepath, new_filepath)
     multiply_database_size(filename=new_filepath, multiplier=2)
@@ -159,5 +159,3 @@ shutil.copy(
     "./examples/data/random_number_data.csv",
     "./examples/data/random_number_data-copy.csv",
 )
-
-

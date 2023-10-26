@@ -162,4 +162,7 @@ cython_debug/
 # data ignores
 
 notebooks/examples/data/
-runinfo/
+
+runinfo
+
+*memray*
