@@ -48,21 +48,27 @@ repos:
       - id: mypy
         additional_dependencies:
           - "types-requests"
-  - repo: https://github.com/PyCQA/pylint
-    rev: v3.0.0a6
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.11.5"
     hooks:
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: python
-        types: [python]
-        args: ["--disable=W0104,C0114,C0301,C0103,R1735,R0801,W1113", "--extension-pkg-whitelist=duckdb"]
+    -   id: ruff-format
+    -   id: ruff
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.21
+    hooks:
+    -   id: mdformat
         additional_dependencies:
-            - "numpy"
-            - "pandas"
-            - "plotly"
-            - "pyarrow"
-            - "polars"
-            - "duckdb"
-            - "pympler"
-            - "requests"
+        -   mdformat-gfm
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: "v2.5.1"
+    hooks:
+    -   id: pyproject-fmt
+  - repo: https://github.com/citation-file-format/cffconvert
+    rev: 5295f87c0e261da61a7b919fc754e3a77edd98a7
+    hooks:
+    -   id: validate-cff
+  - repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
+    rev: v0.6.0
+    hooks:
+    -   id: pre-commit-update
+        args: ["--keep", "mdformat", "--keep", "pre-commit-update", "--keep", "cffconvert"]

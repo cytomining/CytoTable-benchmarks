@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.6
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -16,9 +16,6 @@
 # # Why Arrow?
 #
 # This notebook explores the benefits or drawbacks of using the [Arrow](https://arrow.apache.org) in-memory data format relative to other formats such as Pandas DataFrames.
-
-# set ipyflow reactive mode
-# %flow mode reactive
 
 # +
 import pathlib

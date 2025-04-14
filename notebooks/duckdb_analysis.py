@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.6
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -16,9 +16,6 @@
 # # Why DuckDB?
 #
 # This notebook explores the benefits or drawbacks of using the [DuckDB](https://duckdb.org/) data joins relative to other methods such as Pandas DataFrames.
-
-# set ipyflow reactive mode
-# %flow mode reactive
 
 # +
 import io

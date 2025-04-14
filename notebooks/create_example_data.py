@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -16,9 +16,6 @@
 # # Create Example Data
 #
 # Create example data for use in other work within this repo.
-
-# set ipyflow reactive mode
-# %flow mode reactive
 
 # +
 import pathlib

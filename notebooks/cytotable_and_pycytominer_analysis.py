@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: Python 3 (ipyflow)
 #     language: python
@@ -16,9 +16,6 @@
 # # CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) Performance Comparisons
 #
 # This notebook explores CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) usage with datasets of varying size to help describe performance impacts.
-
-# set ipyflow reactive mode
-# %flow mode reactive
 
 # +
 import io
