@@ -27,6 +27,7 @@ import plotly.express as px
 import plotly.io as pio
 from IPython.display import Image
 from utilities import timer
+import sqlalchemy
 # -
 
 # target file or table names

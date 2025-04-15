@@ -50,7 +50,7 @@ example_data_list = [
     f"{examples_dir}/data/all_cellprofiler-x32.sqlite",
 ]
 # format for memray time strings
-tformat = "%Y-%m-%d %H:%M:%S.%f"
+tformat = "%Y-%m-%d %H:%M:%S.%f%z"
 
 # +
 # result list for storing data
