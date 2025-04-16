@@ -7,12 +7,14 @@ Note: intended to be used for profiling via memray.
 import cytotable
 import pathlib
 import sys
+import parsl
 
 
 def main():
     input_file = sys.argv[1]
     dest_path = (
-        f"{pathlib.Path(__file__).parent.resolve()}/{pathlib.Path(input_file).name}"
+        f"{pathlib.Path(__file__).parent.resolve()}/"
+        f"{pathlib.Path(input_file).name}.cytotable.parquet"
     )
 
     result = cytotable.convert(
@@ -24,6 +26,11 @@ def main():
         chunk_size=200000,
     )
 
+    # clear the parsl config
+    # to help clean up.
+    parsl.clear()
+
+    # clean up file
     pathlib.Path(dest_path).unlink()
 
 

@@ -12,7 +12,8 @@ import sys
 def main():
     input_file = sys.argv[1]
     dest_path = (
-        f"{pathlib.Path(__file__).parent.resolve()}/{pathlib.Path(input_file).name}"
+        f"{pathlib.Path(__file__).parent.resolve()}/"
+        f"{pathlib.Path(input_file).name}.pycytominer.parquet"
     )
 
     result = SingleCells(
@@ -38,6 +39,7 @@ def main():
         output_type="parquet",
     )
 
+    # clean up file
     pathlib.Path(dest_path).unlink()
 
 
