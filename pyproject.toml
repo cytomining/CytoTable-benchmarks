@@ -50,9 +50,14 @@ formats = "ipynb,py:light"
 # sets a cwd relative for the shell script below
 cwd = "notebooks"
 shell = """
-  poetry run python create_example_data.py &&
-  poetry run python arrow_analysis.py &&
-  poetry run python parquet_analysis.py &&
-  poetry run python duckdb_analysis.py &&
-  poetry run python cytotable_and_pycytominer_analysis.py
+  printf "Creating example data\n\n" &&
+  python create_example_data.py &&
+  printf "Running Arrow benchmarks\n\n" &&
+  python arrow_analysis.py &&
+  printf "Running Parquet benchmarks\n\n" &&
+  python parquet_analysis.py &&
+  printf "Running DuckDB benchmarks\n\n" &&
+  python duckdb_analysis.py &&
+  printf "Running CytoTable and Pycytominer benchmarks\n\n" &&
+  python cytotable_and_pycytominer_analysis.py
 """
