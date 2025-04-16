@@ -30,6 +30,7 @@ polars = ">=0.18.4"
 memray = ">=1.8.1"
 pandas = ">=2.1.1"
 poethepoet = "^0.33.1"
+kaleido = "0.2.1"
 
 
 [build-system]
