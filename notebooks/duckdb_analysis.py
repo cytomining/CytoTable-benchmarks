@@ -52,6 +52,13 @@ example_data_list = [
 # format for memray time strings
 tformat = "%Y-%m-%d %H:%M:%S.%f%z"
 
+# avoid a "cold start" for tested packages by using them before benchmarks
+for example_file in example_files_list:
+    run = subprocess.run(
+        ["python", example_file, example_data_list[0]],
+        capture_output=True,
+    )
+
 # +
 # result list for storing data
 results = []

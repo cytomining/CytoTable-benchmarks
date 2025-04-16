@@ -41,6 +41,20 @@ mem_read_size_image = f"{image_dir}/arrow-comparisons-mem-read-size.png"
 pathlib.Path(parquet_name).unlink(missing_ok=True)
 
 # +
+# avoid a "cold start" for tested packages by using them before benchmarks
+df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
+# write to parquet for tests below
+df.to_parquet(path=(coldstart_file := "coldstart.parquet"), compression="snappy")
+
+# read the file using the benchmarked packages
+pd.read_parquet(path=coldstart_file)
+parquet.read_table(source=coldstart_file)
+pl.scan_parquet(source=coldstart_file).collect()
+
+# remove the coldstart file
+pathlib.Path(coldstart_file).unlink(missing_ok=True)
+
+# +
 # starting rowcount and col count
 nrows = 320
 ncols = 160

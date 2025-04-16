@@ -25,9 +25,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import sqlalchemy
 from IPython.display import Image
 from utilities import timer
-import sqlalchemy
 # -
 
 # target file or table names
@@ -44,6 +44,16 @@ file_read_time_all_image = (
 file_read_time_one_image = (
     f"{image_dir}/parquet-comparisons-file-read-time-one-column.png"
 )
+
+# avoid a "cold start" for tested packages by using them before benchmarks
+df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
+# export and read using various methods
+df.to_csv(path_or_buf=csv_name, compression="gzip")
+pd.read_csv(filepath_or_buffer=csv_name, compression="gzip")
+df.to_sql(name=sqlite_tbl_name, con=f"sqlite:///{sqlite_name}")
+pd.read_sql(sql=f"SELECT * FROM {sqlite_tbl_name}", con=f"sqlite:///{sqlite_name}")
+df.to_parquet(path=parquet_name, compression="gzip")
+pd.read_parquet(path=parquet_name)
 
 # remove any existing prior work
 for filename in [csv_name, parquet_name, sqlite_name]:

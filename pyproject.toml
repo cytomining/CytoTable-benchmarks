@@ -54,5 +54,5 @@ shell = """
   poetry run python arrow_analysis.py &&
   poetry run python parquet_analysis.py &&
   poetry run python duckdb_analysis.py &&
-  poetry run python cytotable_and_pycytominer_anlaysis.py
+  poetry run python cytotable_and_pycytominer_analysis.py
 """
