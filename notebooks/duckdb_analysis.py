@@ -13,11 +13,12 @@
 #     name: ipyflow
 # ---
 
+# + [markdown] papermill={"duration": 0.00361, "end_time": "2025-04-17T22:27:07.169251", "exception": false, "start_time": "2025-04-17T22:27:07.165641", "status": "completed"}
 # # Why DuckDB?
 #
 # This notebook explores the benefits or drawbacks of using the [DuckDB](https://duckdb.org/) data joins relative to other methods such as Pandas DataFrames.
 
-# +
+# + papermill={"duration": 1.257611, "end_time": "2025-04-17T22:27:08.431537", "exception": false, "start_time": "2025-04-17T22:27:07.173926", "status": "completed"}
 import io
 import itertools
 import json
@@ -30,8 +31,13 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from IPython.display import Image
-# -
+from utilities import get_system_info
 
+# + papermill={"duration": 0.014777, "end_time": "2025-04-17T22:27:08.447438", "exception": false, "start_time": "2025-04-17T22:27:08.432661", "status": "completed"}
+# show the system information
+_ = get_system_info(show_output=True)
+
+# + papermill={"duration": 0.036131, "end_time": "2025-04-17T22:27:08.486789", "exception": false, "start_time": "2025-04-17T22:27:08.450658", "status": "completed"}
 # target file or table names
 image_dir = "images"
 examples_dir = "examples"
@@ -52,6 +58,7 @@ example_data_list = [
 # format for memray time strings
 tformat = "%Y-%m-%d %H:%M:%S.%f%z"
 
+# + papermill={"duration": 1.581612, "end_time": "2025-04-17T22:27:10.071714", "exception": false, "start_time": "2025-04-17T22:27:08.490102", "status": "completed"}
 # avoid a "cold start" for tested packages by using them before benchmarks
 for example_file in example_files_list:
     run = subprocess.run(
@@ -59,7 +66,7 @@ for example_file in example_files_list:
         capture_output=True,
     )
 
-# +
+# + papermill={"duration": 19.539887, "end_time": "2025-04-17T22:27:29.612995", "exception": false, "start_time": "2025-04-17T22:27:10.073108", "status": "completed"}
 # result list for storing data
 results = []
 
@@ -124,8 +131,8 @@ for example_file, example_data in itertools.product(
 
 df_results = pd.DataFrame(results)
 df_results
-# -
 
+# + papermill={"duration": 0.111279, "end_time": "2025-04-17T22:27:29.725655", "exception": false, "start_time": "2025-04-17T22:27:29.614376", "status": "completed"}
 df_results["data_input_renamed"] = df_results["data_input"].str.replace(
     "all_cellprofiler", "input"
 )
@@ -148,7 +155,7 @@ df_results = (
 )
 df_results
 
-# +
+# + papermill={"duration": 1.188993, "end_time": "2025-04-17T22:27:30.919664", "exception": false, "start_time": "2025-04-17T22:27:29.730671", "status": "completed"}
 # read time chart
 fig = px.line(
     df_results,
@@ -174,7 +181,7 @@ fig.update_traces(mode="lines+markers")
 pio.write_image(fig, join_read_time_image)
 Image(url=join_read_time_image)
 
-# +
+# + papermill={"duration": 0.184158, "end_time": "2025-04-17T22:27:31.105228", "exception": false, "start_time": "2025-04-17T22:27:30.921070", "status": "completed"}
 # memory size
 fig = px.bar(
     df_results,

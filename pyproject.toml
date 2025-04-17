@@ -31,6 +31,10 @@ memray = ">=1.8.1"
 pandas = ">=2.1.1"
 poethepoet = "^0.33.1"
 kaleido = "0.2.1"
+# added to avoid poetry dep resolution issues
+# used by papermill
+botocore = "^1.37.36"
+papermill = "^2.6.0"
 
 
 [build-system]
@@ -54,11 +58,11 @@ shell = """
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
-  python arrow_analysis.py &&
+  papermill arrow_analysis.ipynb arrow_analysis.ipynb &&
   printf "Running Parquet benchmarks\n\n" &&
-  python parquet_analysis.py &&
+  papermill parquet_analysis.ipynb parquet_analysis.ipynb &&
   printf "Running DuckDB benchmarks\n\n" &&
-  python duckdb_analysis.py &&
+  papermill duckdb_analysis.ipynb duckdb_analysis.ipynb &&
   printf "Running CytoTable and Pycytominer benchmarks\n\n" &&
-  python cytotable_and_pycytominer_analysis.py
+  papermill cytotable_and_pycytominer_analysis.ipynb cytotable_and_pycytominer_analysis.ipynb
 """

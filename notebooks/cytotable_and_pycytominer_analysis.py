@@ -31,10 +31,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from IPython.display import Image
+from utilities import get_system_info
 
 # set plotly default theme
 pio.templates.default = "simple_white"
 # -
+
+# show the system information
+_ = get_system_info(show_output=True)
 
 # observe the virtual env for dependency inheritance with memray
 # from subprocedure calls
@@ -54,6 +58,7 @@ pio.templates.default = "simple_white"
     # replace final newline
 ).replace("\n", "")
 
+# +
 # target file or table names
 image_dir = "images"
 examples_dir = "examples"
@@ -80,8 +85,10 @@ example_data_list = [
     f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
     f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
 ]
+
 # format for memray time strings
 tformat = "%Y-%m-%d %H:%M:%S.%f%z"
+# -
 
 # avoid a "cold start" for tested packages by using them before benchmarks
 for example_file in example_files_list:
@@ -243,6 +250,7 @@ fig = px.line(
     symbol_sequence=["diamond"],
     color_discrete_sequence=[
         px.colors.qualitative.Vivid[6],
+        px.colors.qualitative.Vivid[7],
         px.colors.qualitative.Vivid[4],
     ],
 )
@@ -283,7 +291,8 @@ Image(url=join_read_time_image.replace(".png", ".svg"))
 fig = px.line(
     df_results,
     y=[
-        "cytotable_total_memory (GB)",
+        "cytotable_total_memory (multiprocess) (GB)",
+        "cytotable_total_memory (multithread) (GB)",
         "pycytominer_total_memory (GB)",
     ],
     x="data_input_renamed",
@@ -294,13 +303,15 @@ fig = px.line(
     symbol_sequence=["diamond"],
     color_discrete_sequence=[
         px.colors.qualitative.Vivid[6],
+        px.colors.qualitative.Vivid[7],
         px.colors.qualitative.Vivid[4],
     ],
 )
 
 # rename the lines for the legend
 newnames = {
-    "cytotable_total_memory (GB)": "CytoTable",
+    "cytotable_total_memory (multiprocess) (GB)": "CytoTable (multiprocess)",
+    "cytotable_total_memory (multithread) (GB)": "CytoTable (multithread)",
     "pycytominer_total_memory (GB)": "Pycytominer",
 }
 # referenced from: https://stackoverflow.com/a/64378982
