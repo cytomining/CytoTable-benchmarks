@@ -8,9 +8,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: Python 3 (ipyflow)
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: ipyflow
+#     name: python3
 # ---
 
 # + [markdown] papermill={"duration": 0.003778, "end_time": "2025-04-17T22:22:59.184000", "exception": false, "start_time": "2025-04-17T22:22:59.180222", "status": "completed"}
