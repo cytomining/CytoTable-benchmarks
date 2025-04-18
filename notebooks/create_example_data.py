@@ -6,19 +6,16 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: Python 3 (ipyflow)
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: ipyflow
+#     name: python3
 # ---
 
 # # Create Example Data
 #
 # Create example data for use in other work within this repo.
-
-# set ipyflow reactive mode
-# %flow mode reactive
 
 # +
 import pathlib
@@ -28,7 +25,6 @@ import sqlite3
 import duckdb
 import numpy as np
 import pyarrow as pa
-import requests
 from pyarrow import csv, parquet
 from utilities import download_file
 # -
@@ -85,7 +81,7 @@ def multiply_database_size(filename: str, multiplier: int = 2):
             max_id = max(row["ImageNumber"] for row in rows)
 
             new_rows = []
-            # use a mutliplier to control how many times the data is multiplied
+            # use a multiplier to control how many times the data is multiplied
             for loop_multiply in range(1, multiplier):
                 # Copy the rows and increment the id values
                 for row in rows:

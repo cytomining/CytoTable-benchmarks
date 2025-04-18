@@ -4,15 +4,18 @@
 Demonstrating CytoTable capabilities with input datasets.
 Note: intended to be used for profiling via memray.
 """
-from pycytominer.cyto_utils.cells import SingleCells
+
 import pathlib
 import sys
+
+from pycytominer.cyto_utils.cells import SingleCells
 
 
 def main():
     input_file = sys.argv[1]
     dest_path = (
-        f"{pathlib.Path(__file__).parent.resolve()}/{pathlib.Path(input_file).name}"
+        f"{pathlib.Path(__file__).parent.resolve()}/"
+        f"{pathlib.Path(input_file).name}.pycytominer.parquet"
     )
 
     result = SingleCells(
@@ -38,6 +41,7 @@ def main():
         output_type="parquet",
     )
 
+    # clean up file
     pathlib.Path(dest_path).unlink()
 
 

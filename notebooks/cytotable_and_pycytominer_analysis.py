@@ -6,38 +6,36 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: Python 3 (ipyflow)
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: ipyflow
+#     name: python3
 # ---
 
 # # CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) Performance Comparisons
 #
 # This notebook explores CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) usage with datasets of varying size to help describe performance impacts.
 
-# set ipyflow reactive mode
-# %flow mode reactive
-
 # +
-import io
 import itertools
 import json
-import os
 import pathlib
 import subprocess
-import tokenize
 from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from IPython.display import Image
+from utilities import get_system_info
 
 # set plotly default theme
 pio.templates.default = "simple_white"
 # -
+
+# show the system information
+_ = get_system_info(show_output=True)
 
 # observe the virtual env for dependency inheritance with memray
 # from subprocedure calls
@@ -57,6 +55,7 @@ pio.templates.default = "simple_white"
     # replace final newline
 ).replace("\n", "")
 
+# +
 # target file or table names
 image_dir = "images"
 examples_dir = "examples"
@@ -67,7 +66,8 @@ join_mem_size_image = (
     f"{image_dir}/cytotable-and-pycytominer-comparisons-join-memory-size.png"
 )
 example_files_list = [
-    f"{examples_dir}/cytotable_convert_nf1.py",
+    f"{examples_dir}/cytotable_convert_nf1_multiprocess.py",
+    f"{examples_dir}/cytotable_convert_nf1_multithread.py",
     f"{examples_dir}/pycytominer_merge_nf1.py",
 ]
 example_data_list = [
@@ -82,8 +82,19 @@ example_data_list = [
     f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
     f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
 ]
+
 # format for memray time strings
-tformat = "%Y-%m-%d %H:%M:%S.%f"
+tformat = "%Y-%m-%d %H:%M:%S.%f%z"
+# -
+
+# avoid a "cold start" for tested packages by using them before benchmarks
+for example_file in example_files_list:
+    run = subprocess.run(
+        ["python", example_file, example_data_list[0]],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 # +
 # result list for storing data
@@ -108,7 +119,11 @@ for example_file, example_data in itertools.product(
             example_file,
             example_data,
         ],
-        capture_output=True,
+        # avoiding block buffering
+        # which sometimes causes
+        # hanging processes
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         check=True,
     )
 
@@ -190,11 +205,17 @@ df_results
 # -
 
 # build cols for split reference in the plot
-df_results["cytotable_time_duration (secs)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1.py"
+df_results["cytotable_time_duration (multiprocess) (secs)"] = df_results[
+    df_results["file_input"] == "cytotable_convert_nf1_multiprocess.py"
 ]["time_duration (secs)"]
-df_results["cytotable_total_memory (GB)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1.py"
+df_results["cytotable_total_memory (multiprocess) (GB)"] = df_results[
+    df_results["file_input"] == "cytotable_convert_nf1_multiprocess.py"
+]["total_memory (GB)"]
+df_results["cytotable_time_duration (multithread) (secs)"] = df_results[
+    df_results["file_input"] == "cytotable_convert_nf1_multithread.py"
+]["time_duration (secs)"]
+df_results["cytotable_total_memory (multithread) (GB)"] = df_results[
+    df_results["file_input"] == "cytotable_convert_nf1_multithread.py"
 ]["total_memory (GB)"]
 df_results["pycytominer_time_duration (secs)"] = df_results[
     df_results["file_input"] == "pycytominer_merge_nf1.py"
@@ -214,7 +235,8 @@ df_results
 fig = px.line(
     df_results,
     y=[
-        "cytotable_time_duration (secs)",
+        "cytotable_time_duration (multiprocess) (secs)",
+        "cytotable_time_duration (multithread) (secs)",
         "pycytominer_time_duration (secs)",
     ],
     x="data_input_renamed",
@@ -225,13 +247,15 @@ fig = px.line(
     symbol_sequence=["diamond"],
     color_discrete_sequence=[
         px.colors.qualitative.Vivid[6],
+        px.colors.qualitative.Vivid[7],
         px.colors.qualitative.Vivid[4],
     ],
 )
 
 # rename the lines for the legend
 newnames = {
-    "cytotable_time_duration (secs)": "CytoTable",
+    "cytotable_time_duration (multiprocess) (secs)": "CytoTable (multiprocess)",
+    "cytotable_time_duration (multithread) (secs)": "CytoTable (multithread)",
     "pycytominer_time_duration (secs)": "Pycytominer",
 }
 # referenced from: https://stackoverflow.com/a/64378982
@@ -264,7 +288,8 @@ Image(url=join_read_time_image.replace(".png", ".svg"))
 fig = px.line(
     df_results,
     y=[
-        "cytotable_total_memory (GB)",
+        "cytotable_total_memory (multiprocess) (GB)",
+        "cytotable_total_memory (multithread) (GB)",
         "pycytominer_total_memory (GB)",
     ],
     x="data_input_renamed",
@@ -275,13 +300,15 @@ fig = px.line(
     symbol_sequence=["diamond"],
     color_discrete_sequence=[
         px.colors.qualitative.Vivid[6],
+        px.colors.qualitative.Vivid[7],
         px.colors.qualitative.Vivid[4],
     ],
 )
 
 # rename the lines for the legend
 newnames = {
-    "cytotable_total_memory (GB)": "CytoTable",
+    "cytotable_total_memory (multiprocess) (GB)": "CytoTable (multiprocess)",
+    "cytotable_total_memory (multithread) (GB)": "CytoTable (multithread)",
     "pycytominer_total_memory (GB)": "Pycytominer",
 }
 # referenced from: https://stackoverflow.com/a/64378982
