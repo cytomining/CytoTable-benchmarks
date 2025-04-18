@@ -4,9 +4,11 @@
 Demonstrating CytoTable capabilities with input datasets.
 Note: intended to be used for profiling via memray.
 """
-import cytotable
+
 import pathlib
 import sys
+
+import cytotable
 import parsl
 
 

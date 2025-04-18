@@ -4,9 +4,11 @@
 Demonstrating CytoTable capabilities with input datasets.
 Note: intended to be used for profiling via memray.
 """
-import cytotable
+
 import pathlib
 import sys
+
+import cytotable
 import parsl
 from parsl.config import Config
 from parsl.executors import ThreadPoolExecutor
@@ -26,7 +28,9 @@ def main():
         source_datatype="sqlite",
         preset="cellprofiler_sqlite_pycytominer",
         chunk_size=200000,
-        parsl_config=Config(executors=[ThreadPoolExecutor(label="tpe_for_cytotable_testing")])
+        parsl_config=Config(
+            executors=[ThreadPoolExecutor(label="tpe_for_cytotable_testing")]
+        ),
     )
 
     # clear the parsl config

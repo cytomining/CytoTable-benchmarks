@@ -19,12 +19,12 @@
 # This notebook explores the benefits or drawbacks of using the [DuckDB](https://duckdb.org/) data joins relative to other methods such as Pandas DataFrames.
 
 # + papermill={"duration": 1.257611, "end_time": "2025-04-17T22:27:08.431537", "exception": false, "start_time": "2025-04-17T22:27:07.173926", "status": "completed"}
-import io
+
 import itertools
 import json
 import pathlib
 import subprocess
-import tokenize
+
 from datetime import datetime
 
 import pandas as pd

@@ -4,9 +4,11 @@
 Demonstrating CytoTable capabilities with input datasets.
 Note: intended to be used for profiling via memray.
 """
-from pycytominer.cyto_utils.cells import SingleCells
+
 import pathlib
 import sys
+
+from pycytominer.cyto_utils.cells import SingleCells
 
 
 def main():

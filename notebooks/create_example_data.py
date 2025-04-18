@@ -25,7 +25,6 @@ import sqlite3
 import duckdb
 import numpy as np
 import pyarrow as pa
-import requests
 from pyarrow import csv, parquet
 from utilities import download_file
 # -
@@ -82,7 +81,7 @@ def multiply_database_size(filename: str, multiplier: int = 2):
             max_id = max(row["ImageNumber"] for row in rows)
 
             new_rows = []
-            # use a mutliplier to control how many times the data is multiplied
+            # use a multiplier to control how many times the data is multiplied
             for loop_multiply in range(1, multiplier):
                 # Copy the rows and increment the id values
                 for row in rows:

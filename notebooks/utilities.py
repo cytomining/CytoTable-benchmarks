@@ -1,12 +1,13 @@
 """
 Utilities for running various benchmarks.
 """
+
 import pathlib
+import platform
 import time
 from typing import Callable, Optional
-import platform
-import psutil
 
+import psutil
 import requests
 
 
@@ -49,14 +50,15 @@ def download_file(urlstr, filename):
     else:
         print(f"Failed to download file, status code: {response.status_code}")
 
+
 def get_system_info(show_output: bool = False) -> dict:
     """
-    Retrieve system information such as 
+    Retrieve system information such as
     OS, CPU, RAM, and Python version.
 
     Args:
-        pretty_print (bool): 
-            If True, prints the system 
+        pretty_print (bool):
+            If True, prints the system
             information in a readable format.
             Defaults to False.
 
@@ -71,7 +73,7 @@ def get_system_info(show_output: bool = False) -> dict:
         "Processor": platform.processor(),
         "CPU Cores (Logical)": psutil.cpu_count(logical=True),
         "CPU Cores (Physical)": psutil.cpu_count(logical=False),
-        "Total RAM (GB)": round(psutil.virtual_memory().total / (1024 ** 3), 2),
+        "Total RAM (GB)": round(psutil.virtual_memory().total / (1024**3), 2),
         "Python Version": platform.python_version(),
     }
 

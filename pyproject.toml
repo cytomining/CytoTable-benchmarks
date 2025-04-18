@@ -1,8 +1,13 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+
+requires = [ "poetry-core" ]
+
 [tool.poetry]
 name = "cytotable-benchmarks"
 version = "0.0.1"
 description = "Benchmarks for CytoTable and related."
-authors = ["d33bs <dave.bunten@cuanschutz.edu>"]
+authors = [ "d33bs <dave.bunten@cuanschutz.edu>" ]
 license = "BSD 3-Clause"
 readme = "README.md"
 package-mode = false
@@ -36,14 +41,9 @@ kaleido = "0.2.1"
 botocore = "^1.37.36"
 papermill = "^2.6.0"
 
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.vulture]
 min_confidence = 80
-paths = ["notebooks"]
+paths = [ "notebooks" ]
 sort_by_size = true
 verbose = true
 
@@ -51,6 +51,7 @@ verbose = true
 formats = "ipynb,py:light"
 
 # defines a task for running cytotable benchmarks
+
 [tool.poe.tasks.run-cytotable-benchmarks]
 # sets a cwd relative for the shell script below
 cwd = "notebooks"

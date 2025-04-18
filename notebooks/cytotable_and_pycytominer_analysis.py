@@ -18,13 +18,10 @@
 # This notebook explores CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) usage with datasets of varying size to help describe performance impacts.
 
 # +
-import io
 import itertools
 import json
-import os
 import pathlib
 import subprocess
-import tokenize
 from datetime import datetime
 
 import pandas as pd
