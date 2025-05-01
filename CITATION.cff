@@ -96,3 +96,21 @@ references:
       - description: "Github Link with Contributors"
         type: url
         value: "https://github.com/WayScience/NF1_SchwannCell_data/graphs/contributors"
+  - authors:
+      - name: "ExampleHuman CellProfiler Data Team"
+    date-accessed: "2022-09-01"
+    title: ExampleHuman CellProfiler Data
+    type: data
+    repository-code: "https://github.com/CellProfiler/examples/tree/master/ExampleHuman"
+    url: "https://cellprofiler.org/examples"
+    scope: "ExampleHuman"
+    notes: >-
+      ExampleHuman CellProfiler data is used to help validate expected results
+      for CytoTable and Pandas benchmarking.
+    identifiers:
+      - description: "README.md with Citation Information"
+        type: url
+        value: "https://github.com/CellProfiler/examples/blob/master/ExampleHuman/README.md"
+      - description: "Location of feature data extracted by CellProfiler for CytoTable project"
+        type: url
+        value: "https://github.com/cytomining/CytoTable/tree/main/tests/data/cellprofiler/ExampleHuman"
