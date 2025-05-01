@@ -60,15 +60,15 @@ _ = get_system_info(show_output=True)
 image_dir = "images"
 examples_dir = "examples"
 join_read_time_image = (
-    f"{image_dir}/cytotable-and-pycytominer-comparisons-join-completion-time.png"
+    f"{image_dir}/cytotable-and-pycytominer-comparisons-join-completion-time-sqlite.png"
 )
 join_mem_size_image = (
-    f"{image_dir}/cytotable-and-pycytominer-comparisons-join-memory-size.png"
+    f"{image_dir}/cytotable-and-pycytominer-comparisons-join-memory-size-sqlite.png"
 )
 example_files_list = [
-    f"{examples_dir}/cytotable_convert_nf1_multiprocess.py",
-    f"{examples_dir}/cytotable_convert_nf1_multithread.py",
-    f"{examples_dir}/pycytominer_merge_nf1.py",
+    f"{examples_dir}/cytotable_convert_nf1_multiprocess_sqlite.py",
+    f"{examples_dir}/cytotable_convert_nf1_multithread_sqlite.py",
+    f"{examples_dir}/pycytominer_merge_nf1_sqlite.py",
 ]
 example_data_list = [
     f"{examples_dir}/data/all_cellprofiler.sqlite",

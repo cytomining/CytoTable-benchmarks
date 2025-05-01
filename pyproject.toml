@@ -65,5 +65,5 @@ shell = """
   printf "Running DuckDB benchmarks\n\n" &&
   papermill duckdb_analysis.ipynb duckdb_analysis.ipynb &&
   printf "Running CytoTable and Pycytominer benchmarks\n\n" &&
-  papermill cytotable_and_pycytominer_analysis.ipynb cytotable_and_pycytominer_analysis.ipynb
+  papermill cytotable_and_pycytominer_analysis_sqlite.ipynb cytotable_and_pycytominer_analysis_sqlite.ipynb
 """

@@ -166,3 +166,5 @@ notebooks/examples/data/
 runinfo
 
 *memray*
+
+notebooks/*.parquet
