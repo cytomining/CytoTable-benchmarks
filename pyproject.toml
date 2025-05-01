@@ -64,6 +64,8 @@ shell = """
   papermill parquet_analysis.ipynb parquet_analysis.ipynb &&
   printf "Running DuckDB benchmarks\n\n" &&
   papermill duckdb_analysis.ipynb duckdb_analysis.ipynb &&
-  printf "Running CytoTable and Pycytominer benchmarks\n\n" &&
+  printf "Running CytoTable and Pycytominer benchmarks (SQLite)\n\n" &&
   papermill cytotable_and_pycytominer_analysis_sqlite.ipynb cytotable_and_pycytominer_analysis_sqlite.ipynb
+  printf "Running CytoTable and Pandas benchmarks (CSV)\n\n" &&
+  papermill cytotable_and_pandas_analysis_csv.ipynb cytotable_and_pandas_analysis_csv.ipynb
 """
