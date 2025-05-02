@@ -218,9 +218,6 @@ df_results = pd.DataFrame(results)
 df_results.to_parquet(results_parquet_file, index=False)
 
 print(f"Processing complete. Results saved to '{results_parquet_file}'.")
-# -
-
-df_results = pd.read_parquet(results_parquet_file)
 
 
 # +

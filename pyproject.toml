@@ -58,6 +58,7 @@ cwd = "notebooks"
 shell = """
   printf "Cleaning up previous run data\n\n" &&
   rm ./notebooks/*.parquet &&
+  rm ./notebooks/examples/*.cytotable.parquet &&
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
