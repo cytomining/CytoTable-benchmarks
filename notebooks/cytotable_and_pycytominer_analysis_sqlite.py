@@ -75,15 +75,15 @@ example_files_list = [
 ]
 example_data_list = [
     f"{examples_dir}/data/all_cellprofiler.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x2.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x4.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x8.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x16.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x32.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x64.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x128.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
-    f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x2.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x4.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x8.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x16.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x32.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x64.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x128.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
+    # f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
 ]
 
 # format for memray time strings
@@ -258,22 +258,22 @@ df_results
 
 # build cols for split reference in the plot
 df_results["cytotable_time_duration (multiprocess) (secs)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1_multiprocess.py"
+    df_results["file_input"] == "cytotable_convert_nf1_multiprocess_sqlite.py"
 ]["time_duration (secs)"]
 df_results["cytotable_total_memory (multiprocess) (GB)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1_multiprocess.py"
+    df_results["file_input"] == "cytotable_convert_nf1_multiprocess_sqlite.py"
 ]["total_memory (GB)"]
 df_results["cytotable_time_duration (multithread) (secs)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1_multithread.py"
+    df_results["file_input"] == "cytotable_convert_nf1_multithread_sqlite.py"
 ]["time_duration (secs)"]
 df_results["cytotable_total_memory (multithread) (GB)"] = df_results[
-    df_results["file_input"] == "cytotable_convert_nf1_multithread.py"
+    df_results["file_input"] == "cytotable_convert_nf1_multithread_sqlite.py"
 ]["total_memory (GB)"]
 df_results["pycytominer_time_duration (secs)"] = df_results[
-    df_results["file_input"] == "pycytominer_merge_nf1.py"
+    df_results["file_input"] == "pycytominer_merge_nf1_sqlite.py"
 ]["time_duration (secs)"]
 df_results["pycytominer_total_memory (GB)"] = df_results[
-    df_results["file_input"] == "pycytominer_merge_nf1.py"
+    df_results["file_input"] == "pycytominer_merge_nf1_sqlite.py"
 ]["total_memory (GB)"]
 df_results = (
     df_results.apply(lambda x: pd.Series(x.dropna().values))

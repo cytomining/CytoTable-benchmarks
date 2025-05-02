@@ -1068,18 +1068,18 @@ tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
 name = "cytotable"
-version = "0.0.13"
+version = "0.0.14"
 description = "Transform CellProfiler and DeepProfiler data for processing image-based profiling readouts with Pycytominer and other Cytomining tools."
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["main"]
 files = [
-    {file = "cytotable-0.0.13-py3-none-any.whl", hash = "sha256:4f4621396fa23dba55912c27b21fa51fed5c0812d389e8d78af4dbb933abd40e"},
-    {file = "cytotable-0.0.13.tar.gz", hash = "sha256:720e20db92467c959cc1f0270ca019af11945e3a0dad37ab2cba473971e1e0ff"},
+    {file = "cytotable-0.0.14-py3-none-any.whl", hash = "sha256:8148f7b67ca7567e2626918b040d5246c5bbba4f300651a260166ca2961ec99d"},
+    {file = "cytotable-0.0.14.tar.gz", hash = "sha256:8a1572ff3c3fefc750b38ac51f4a96fa370be385ae8a46f7ed24c2bdd739d006"},
 ]
 
 [package.dependencies]
-cloudpathlib = {version = ">=0.18.0,<0.19.0", extras = ["all", "s3"]}
+cloudpathlib = {version = ">=0.18,<0.22", extras = ["all", "s3"]}
 duckdb = ">=0.10.1"
 numpy = [
     {version = "<=1.24.4", markers = "python_version < \"3.12\""},
