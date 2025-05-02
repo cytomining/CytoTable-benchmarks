@@ -57,8 +57,8 @@ formats = "ipynb,py:light"
 cwd = "notebooks"
 shell = """
   printf "Cleaning up previous run data\n\n" &&
-  rm ./notebooks/*.parquet || true &&
-  rm ./notebooks/examples/*.cytotable.parquet || true &&
+  rm -rf ./notebooks/*.parquet || true &&
+  rm -rf ./notebooks/examples/*.cytotable.parquet || true &&
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
