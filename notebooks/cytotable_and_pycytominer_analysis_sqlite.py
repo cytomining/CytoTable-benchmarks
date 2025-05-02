@@ -210,7 +210,9 @@ for example_file, example_data in itertools.product(
                         os.kill(proc.info["pid"], signal.SIGKILL)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            print(f"Finished {example_file} with {example_data}, iteration {iteration}.")
+            print(
+                f"Finished {example_file} with {example_data}, iteration {iteration}."
+            )
 
 # Final save to Parquet
 df_results = pd.DataFrame(results)
