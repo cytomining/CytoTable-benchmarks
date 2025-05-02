@@ -20,13 +20,16 @@
 # +
 import itertools
 import json
+import os
 import pathlib
+import signal
 import subprocess
 from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import psutil
 from IPython.display import Image
 from utilities import get_system_info
 
@@ -72,15 +75,15 @@ example_files_list = [
 ]
 example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
+    #f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
 ]
 
 # format for memray time strings
@@ -195,6 +198,15 @@ for example_file, example_data in itertools.product(
             # Cleanup temporary files
             pathlib.Path(target_bin).unlink(missing_ok=True)
             pathlib.Path(target_json).unlink(missing_ok=True)
+            # Cleanup any Parsl processes which may yet still exist
+            for proc in psutil.process_iter(attrs=["pid", "cmdline"]):
+                try:
+                    cmdline = proc.info.get("cmdline")
+                    if isinstance(cmdline, list) and any("parsl" in part for part in cmdline):
+                        os.kill(proc.info["pid"], signal.SIGKILL)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+
 
 # Final save to Parquet
 df_results = pd.DataFrame(results)
