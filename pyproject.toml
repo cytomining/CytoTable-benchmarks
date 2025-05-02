@@ -56,6 +56,8 @@ formats = "ipynb,py:light"
 # sets a cwd relative for the shell script below
 cwd = "notebooks"
 shell = """
+  printf "Cleaning up previous run data\n\n" &&
+  rm ./notebooks/*.parquet &&
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
