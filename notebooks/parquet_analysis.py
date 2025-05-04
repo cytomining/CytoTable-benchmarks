@@ -28,8 +28,7 @@ import plotly.express as px
 import plotly.io as pio
 import sqlalchemy
 from IPython.display import Image
-from utilities import timer
-from utilities import get_system_info
+from utilities import get_system_info, timer
 
 # + papermill={"duration": 0.014286, "end_time": "2025-04-17T22:25:12.797048", "exception": false, "start_time": "2025-04-17T22:25:12.782762", "status": "completed"}
 # show the system information

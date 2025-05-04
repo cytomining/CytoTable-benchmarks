@@ -29,8 +29,7 @@ import polars as pl
 from IPython.display import Image
 from pyarrow import parquet
 from pympler.asizeof import asizeof
-from utilities import timer
-from utilities import get_system_info
+from utilities import get_system_info, timer
 
 # + papermill={"duration": 0.014791, "end_time": "2025-04-17T22:23:02.619817", "exception": false, "start_time": "2025-04-17T22:23:02.605026", "status": "completed"}
 # show the system information
@@ -163,5 +162,3 @@ fig.update_layout(
 pio.write_image(fig, mem_read_size_image)
 Image(url=mem_read_size_image)
 # -
-
-

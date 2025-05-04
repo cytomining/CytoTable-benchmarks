@@ -24,7 +24,6 @@ import itertools
 import json
 import pathlib
 import subprocess
-
 from datetime import datetime
 
 import pandas as pd
@@ -76,7 +75,7 @@ for example_file, example_data in itertools.product(
     example_files_list,
     example_data_list,
 ):
-    target_bin = f"{example_file}_with_{example_data.replace(f'{examples_dir}/data/','')}.memray.bin"
+    target_bin = f"{example_file}_with_{example_data.replace(f'{examples_dir}/data/', '')}.memray.bin"
     target_json = f"{target_bin}.json"
     memray_run = subprocess.run(
         [

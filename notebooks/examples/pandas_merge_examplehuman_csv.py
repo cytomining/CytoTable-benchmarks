@@ -7,6 +7,7 @@ Note: intended to be used for profiling via memray.
 
 import pathlib
 import sys
+
 import pandas as pd
 
 
@@ -90,6 +91,7 @@ def main():
 
     # clean up file
     pathlib.Path(dest_path).unlink()
+
 
 if __name__ == "__main__":
     main()

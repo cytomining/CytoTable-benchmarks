@@ -437,5 +437,3 @@ fig.write_image(join_mem_size_image)
 fig.write_image(join_mem_size_image.replace(".png", ".svg"))
 Image(url=join_mem_size_image.replace(".png", ".svg"))
 # -
-
-
