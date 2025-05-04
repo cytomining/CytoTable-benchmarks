@@ -57,8 +57,8 @@ formats = "ipynb,py:light"
 cwd = "notebooks"
 shell = """
   printf "Cleaning up previous run data\n\n" &&
-  rm -rf ./notebooks/*.parquet || true &&
-  rm -rf ./notebooks/examples/*.cytotable.parquet || true &&
+  rm -rf ./*.parquet || true &&
+  rm -rf ./examples/*.cytotable.parquet || true &&
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
@@ -71,4 +71,10 @@ shell = """
   papermill cytotable_and_pycytominer_analysis_sqlite.ipynb cytotable_and_pycytominer_analysis_sqlite.ipynb &&
   printf "Running CytoTable and Pandas benchmarks (CSV)\n\n" &&
   papermill cytotable_and_pandas_analysis_csv.ipynb cytotable_and_pandas_analysis_csv.ipynb
+  printf "Updating Python scripts based on notebook runs\n\n" &&
+  jupytext arrow_analysis.ipynb --to .py &&
+  jupytext parquet_analysis.ipynb --to .py &&
+  jupytext duckdb_analysis.ipynb --to .py &&
+  jupytext cytotable_and_pycytominer_analysis_sqlite.ipynb --to .py &&
+  jupytext cytotable_and_pandas_analysis_csv.ipynb --to .py
 """
