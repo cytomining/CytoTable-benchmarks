@@ -37,6 +37,7 @@ keywords:
 license: BSD-3-Clause
 references:
   - type: software
+    title: CytoTable
     authors:
       - given-names: David
         family-names: Bunten
