@@ -84,6 +84,9 @@ example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
 ]
 
 # format for memray time strings
@@ -437,3 +440,5 @@ fig.write_image(join_mem_size_image)
 fig.write_image(join_mem_size_image.replace(".png", ".svg"))
 Image(url=join_mem_size_image.replace(".png", ".svg"))
 # -
+
+

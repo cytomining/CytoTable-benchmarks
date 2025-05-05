@@ -28,7 +28,6 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import csv, parquet
 from utilities import download_file
-
 # -
 
 url = "https://github.com/cytomining/CytoTable/blob/main/tests/data/cellprofiler/NF1_SchwannCell_data/all_cellprofiler.sqlite?raw=true"
@@ -165,7 +164,7 @@ def multiply_csv_dataset_size(directory: str, multiplier: int = 2):
 # doubling the size each time
 number = 2
 previous_dir = pathlib.Path(orig_filepath_csv).resolve()
-for _ in range(0, 9):
+for _ in range(0, 12):
     new_dir = orig_filepath_csv.replace("_csv", f"_csv-x{number}")
     if pathlib.Path(new_dir).is_dir():
         shutil.rmtree(new_dir)
@@ -182,7 +181,7 @@ duckdb.connect().execute(
     LOAD sqlite_scanner;
 
     /* Copy content from nuclei table to parquet file */
-    COPY (select * from sqlite_scan('{orig_filepath_sqlite}', 'Per_Nuclei'))
+    COPY (select * from sqlite_scan('{orig_filepath_sqlite}', 'Per_Nuclei')) 
     TO '{orig_filepath_sqlite + ".nuclei.parquet"}'
     (FORMAT PARQUET);
     """,

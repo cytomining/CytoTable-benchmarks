@@ -75,15 +75,15 @@ example_files_list = [
 ]
 example_data_list = [
     f"{examples_dir}/data/all_cellprofiler.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x2.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x4.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x8.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x16.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x32.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x64.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x128.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
-    # f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x2.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x4.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x8.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x16.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x32.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x64.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x128.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x256.sqlite",
+    f"{examples_dir}/data/all_cellprofiler-x512.sqlite",
 ]
 
 # format for memray time strings
