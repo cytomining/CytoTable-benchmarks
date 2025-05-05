@@ -28,6 +28,7 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import csv, parquet
 from utilities import download_file
+
 # -
 
 url = "https://github.com/cytomining/CytoTable/blob/main/tests/data/cellprofiler/NF1_SchwannCell_data/all_cellprofiler.sqlite?raw=true"
@@ -181,7 +182,7 @@ duckdb.connect().execute(
     LOAD sqlite_scanner;
 
     /* Copy content from nuclei table to parquet file */
-    COPY (select * from sqlite_scan('{orig_filepath_sqlite}', 'Per_Nuclei')) 
+    COPY (select * from sqlite_scan('{orig_filepath_sqlite}', 'Per_Nuclei'))
     TO '{orig_filepath_sqlite + ".nuclei.parquet"}'
     (FORMAT PARQUET);
     """,
