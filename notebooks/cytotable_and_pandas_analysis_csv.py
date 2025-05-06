@@ -113,7 +113,7 @@ else:
 
 # +
 # Number of iterations for each combination
-num_iterations = 6
+num_iterations = 2
 
 # Loop through each combination of example file and data file
 for example_file, example_data in itertools.product(
@@ -300,6 +300,7 @@ aggregated_results.columns = [
     f"{col[0]} ({col[1]})" for col in aggregated_results.columns
 ]
 aggregated_results.reset_index(inplace=True)
+aggregated_results = aggregated_results.sort_values(by="data_input_renamed")
 aggregated_results
 
 # +

@@ -298,6 +298,7 @@ aggregated_results.columns = [
     f"{col[0]} ({col[1]})" for col in aggregated_results.columns
 ]
 aggregated_results.reset_index(inplace=True)
+aggregated_results = aggregated_results.sort_values(by="data_input_renamed")
 aggregated_results
 
 # +
