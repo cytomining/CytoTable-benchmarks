@@ -77,17 +77,17 @@ example_files_list = [
 example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
-    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
 ]
 
 # format for memray time strings
