@@ -22,6 +22,7 @@ import itertools
 import json
 import os
 import pathlib
+import re
 import signal
 import subprocess
 from datetime import datetime
@@ -76,17 +77,17 @@ example_files_list = [
 example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x16",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x32",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x64",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x128",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x256",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x512",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
+    # f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
 ]
 
 # format for memray time strings
@@ -113,7 +114,7 @@ else:
 
 # +
 # Number of iterations for each combination
-num_iterations = 2
+num_iterations = 6
 
 # Loop through each combination of example file and data file
 for example_file, example_data in itertools.product(
@@ -201,16 +202,6 @@ for example_file, example_data in itertools.product(
             # Cleanup temporary files
             pathlib.Path(target_bin).unlink(missing_ok=True)
             pathlib.Path(target_json).unlink(missing_ok=True)
-            # Cleanup any Parsl processes which may yet still exist
-            for proc in psutil.process_iter(attrs=["pid", "cmdline"]):
-                try:
-                    cmdline = proc.info.get("cmdline")
-                    if isinstance(cmdline, list) and any(
-                        "parsl" in part for part in cmdline
-                    ):
-                        os.kill(proc.info["pid"], signal.SIGKILL)
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
             print(
                 f"Finished {example_file} with {example_data}, iteration {iteration}."
             )
@@ -225,12 +216,20 @@ print(f"Processing complete. Results saved to '{results_parquet_file}'.")
 
 # +
 # add columns for data understandability in plots
-def get_file_size_mb(file_path):
+def get_file_size_mb(path):
     """
-    Gather filesize given a file_path
+    Returns the size in MB of a file or total size of all files in a directory.
     """
+    p = pathlib.Path(path)
     try:
-        return pathlib.Path(file_path).stat().st_size / 1024 / 1024
+        if p.is_file():
+            return p.stat().st_size / 1024 / 1024
+        elif p.is_dir():
+            return (
+                sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) / 1024 / 1024
+            )
+        else:
+            return None
     except FileNotFoundError:
         return None
 
@@ -284,6 +283,7 @@ df_results = (
 )
 df_results
 
+# +
 # Group by data_input_renamed and calculate mean, min, and max
 aggregated_results = df_results.groupby("data_input_renamed").agg(
     {
@@ -300,7 +300,21 @@ aggregated_results.columns = [
     f"{col[0]} ({col[1]})" for col in aggregated_results.columns
 ]
 aggregated_results.reset_index(inplace=True)
-aggregated_results = aggregated_results.sort_values(by="data_input_renamed")
+
+
+# Helper function to extract numeric value or None
+def sort_key(s):
+    match = re.search(r"\d+", s)
+    if match:
+        return (1, int(match.group()))  # numeric items: (1, number)
+    else:
+        return (0, s.lower())  # non-numeric items: (0, alphabetical)
+
+
+# Sort using the custom key
+aggregated_results = aggregated_results.sort_values(
+    by="data_input_renamed", key=lambda col: col.map(sort_key)
+)
 aggregated_results
 
 # +
@@ -441,3 +455,5 @@ fig.write_image(join_mem_size_image)
 fig.write_image(join_mem_size_image.replace(".png", ".svg"))
 Image(url=join_mem_size_image.replace(".png", ".svg"))
 # -
+
+

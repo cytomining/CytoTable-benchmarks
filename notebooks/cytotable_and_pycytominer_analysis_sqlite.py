@@ -22,6 +22,7 @@ import itertools
 import json
 import os
 import pathlib
+import re
 import signal
 import subprocess
 from datetime import datetime
@@ -200,16 +201,6 @@ for example_file, example_data in itertools.product(
             # Cleanup temporary files
             pathlib.Path(target_bin).unlink(missing_ok=True)
             pathlib.Path(target_json).unlink(missing_ok=True)
-            # Cleanup any Parsl processes which may yet still exist
-            for proc in psutil.process_iter(attrs=["pid", "cmdline"]):
-                try:
-                    cmdline = proc.info.get("cmdline")
-                    if isinstance(cmdline, list) and any(
-                        "parsl" in part for part in cmdline
-                    ):
-                        os.kill(proc.info["pid"], signal.SIGKILL)
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
             print(
                 f"Finished {example_file} with {example_data}, iteration {iteration}."
             )
@@ -282,6 +273,7 @@ df_results = (
 )
 df_results
 
+# +
 # Group by data_input_renamed and calculate mean, min, and max
 aggregated_results = df_results.groupby("data_input_renamed").agg(
     {
@@ -298,7 +290,21 @@ aggregated_results.columns = [
     f"{col[0]} ({col[1]})" for col in aggregated_results.columns
 ]
 aggregated_results.reset_index(inplace=True)
-aggregated_results = aggregated_results.sort_values(by="data_input_renamed")
+
+
+# Helper function to extract numeric value or None
+def sort_key(s):
+    match = re.search(r"\d+", s)
+    if match:
+        return (1, int(match.group()))  # numeric items: (1, number)
+    else:
+        return (0, s.lower())  # non-numeric items: (0, alphabetical)
+
+
+# Sort using the custom key
+aggregated_results = aggregated_results.sort_values(
+    by="data_input_renamed", key=lambda col: col.map(sort_key)
+)
 aggregated_results
 
 # +
