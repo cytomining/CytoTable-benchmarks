@@ -88,6 +88,7 @@ example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8192",
 ]
 
 # format for memray time strings
