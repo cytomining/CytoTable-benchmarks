@@ -32,10 +32,16 @@ import plotly.express as px
 import plotly.io as pio
 import psutil
 from IPython.display import Image
-from utilities import get_system_info
+from utilities import (
+    get_memory_peak_and_time_duration,
+    get_parsl_peak_memory,
+    get_system_info,
+)
 
 # set plotly default theme
 pio.templates.default = "simple_white"
+# monitoring database for parsl multiprocessing work
+db_file = "runinfo/monitoring.db"
 # -
 
 # show the system information
@@ -47,7 +53,7 @@ _ = get_system_info(show_output=True)
     subprocess.run(
         [
             "which",
-            "memray",
+            "python",
         ],
         capture_output=True,
         check=True,
@@ -89,16 +95,6 @@ example_data_list = [
 
 # format for memray time strings
 tformat = "%Y-%m-%d %H:%M:%S.%f%z"
-# -
-
-# avoid a "cold start" for tested packages by using them before benchmarks
-for example_file in example_files_list:
-    _ = subprocess.run(
-        ["python", example_file, example_data_list[0]],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
 
 # +
 # Define the Parquet file path
@@ -120,6 +116,7 @@ for example_file, example_data in itertools.product(
     example_files_list, example_data_list
 ):
     for iteration in range(num_iterations):
+
         # Skip if this combination and iteration are already processed
         if any(
             result["file_input"] == example_file
@@ -132,45 +129,16 @@ for example_file, example_data in itertools.product(
             )
             continue
 
-        target_bin = f"{example_file}_with_{example_data.replace(f'{examples_dir}/data/', '')}_iter_{iteration}.memray.bin"
-        target_json = f"{target_bin}.json"
-
         try:
-            # Run the example file with memray
-            subprocess.run(
-                [
-                    "memray",
-                    "run",
-                    "--follow-fork",
-                    "--output",
-                    target_bin,
-                    "--force",
+            # gather memory peak and time duration
+            memory_peak, time_duration = get_memory_peak_and_time_duration(
+                cmd=[
+                    "python",
                     example_file,
                     example_data,
                 ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                check=True,
+                polling_pause_seconds=0.000001,
             )
-
-            # Generate memray stats
-            subprocess.run(
-                [
-                    "memray",
-                    "stats",
-                    "--json",
-                    "--output",
-                    target_json,
-                    "--force",
-                    target_bin,
-                ],
-                capture_output=True,
-                check=True,
-            )
-
-            # Load the JSON data
-            with open(target_json) as memray_json_file:
-                memray_data = json.load(memray_json_file)
 
             # Append the result
             results.append(
@@ -178,13 +146,15 @@ for example_file, example_data in itertools.product(
                     "file_input": example_file.replace(f"{examples_dir}/", ""),
                     "data_input": example_data,
                     "iteration": iteration,
-                    "time_duration (secs)": (
-                        datetime.strptime(memray_data["metadata"]["end_time"], tformat)
-                        - datetime.strptime(
-                            memray_data["metadata"]["start_time"], tformat
-                        )
-                    ).total_seconds(),
-                    "total_memory (bytes)": memray_data["total_bytes_allocated"],
+                    "time_duration (secs)": time_duration,
+                    "peak_memory (bytes)": (
+                        memory_peak
+                        # if we have a multiprocessed parsl result we must
+                        # gather the peak memory using parsl's monitoring
+                        # database.
+                        if "multiprocess" not in example_file
+                        else get_parsl_peak_memory(db_file=db_file)
+                    ),
                 }
             )
 
@@ -198,12 +168,13 @@ for example_file, example_data in itertools.product(
             )
 
         finally:
-            # Cleanup temporary files
-            pathlib.Path(target_bin).unlink(missing_ok=True)
-            pathlib.Path(target_json).unlink(missing_ok=True)
+            # remove monitoring database if present from parsl processing
+            if pathlib.Path(db_file).is_file():
+                pathlib.Path(db_file).unlink()
             print(
                 f"Finished {example_file} with {example_data}, iteration {iteration}."
             )
+
 
 # Final save to Parquet
 df_results = pd.DataFrame(results)
@@ -225,9 +196,7 @@ def get_file_size_mb(file_path):
 
 
 # memory usage in MB
-df_results["total_memory (GB)"] = (
-    df_results["total_memory (bytes)"] / 1024 / 1024 / 1024
-)
+df_results["peak_memory (GB)"] = df_results["peak_memory (bytes)"] / 1024 / 1024 / 1024
 
 # data input size additions for greater context
 df_results["data_input_size_mb"] = df_results["data_input"].apply(get_file_size_mb)
@@ -251,24 +220,24 @@ df_results
 df_results["cytotable_time_duration (multiprocess) (secs)"] = df_results[
     df_results["file_input"] == "cytotable_convert_nf1_multiprocess_sqlite.py"
 ]["time_duration (secs)"]
-df_results["cytotable_total_memory (multiprocess) (GB)"] = df_results[
+df_results["cytotable_peak_memory (multiprocess) (GB)"] = df_results[
     df_results["file_input"] == "cytotable_convert_nf1_multiprocess_sqlite.py"
-]["total_memory (GB)"]
+]["peak_memory (GB)"]
 df_results["cytotable_time_duration (multithread) (secs)"] = df_results[
     df_results["file_input"] == "cytotable_convert_nf1_multithread_sqlite.py"
 ]["time_duration (secs)"]
-df_results["cytotable_total_memory (multithread) (GB)"] = df_results[
+df_results["cytotable_peak_memory (multithread) (GB)"] = df_results[
     df_results["file_input"] == "cytotable_convert_nf1_multithread_sqlite.py"
-]["total_memory (GB)"]
+]["peak_memory (GB)"]
 df_results["pycytominer_time_duration (secs)"] = df_results[
     df_results["file_input"] == "pycytominer_merge_nf1_sqlite.py"
 ]["time_duration (secs)"]
-df_results["pycytominer_total_memory (GB)"] = df_results[
+df_results["pycytominer_peak_memory (GB)"] = df_results[
     df_results["file_input"] == "pycytominer_merge_nf1_sqlite.py"
-]["total_memory (GB)"]
+]["peak_memory (GB)"]
 df_results = (
     df_results.apply(lambda x: pd.Series(x.dropna().values))
-    .drop(["file_input", "time_duration (secs)", "total_memory (GB)"], axis=1)
+    .drop(["file_input", "time_duration (secs)", "peak_memory (GB)"], axis=1)
     .dropna()
 )
 df_results
@@ -280,9 +249,9 @@ aggregated_results = df_results.groupby("data_input_renamed").agg(
         "cytotable_time_duration (multiprocess) (secs)": ["mean", "min", "max"],
         "cytotable_time_duration (multithread) (secs)": ["mean", "min", "max"],
         "pycytominer_time_duration (secs)": ["mean", "min", "max"],
-        "cytotable_total_memory (multiprocess) (GB)": ["mean", "min", "max"],
-        "cytotable_total_memory (multithread) (GB)": ["mean", "min", "max"],
-        "pycytominer_total_memory (GB)": ["mean", "min", "max"],
+        "cytotable_peak_memory (multiprocess) (GB)": ["mean", "min", "max"],
+        "cytotable_peak_memory (multithread) (GB)": ["mean", "min", "max"],
+        "pycytominer_peak_memory (GB)": ["mean", "min", "max"],
     }
 )
 # Flatten the multi-level columns
@@ -382,11 +351,11 @@ fig = px.line(
     aggregated_results,
     x="data_input_renamed",
     y=[
-        "cytotable_total_memory (multiprocess) (GB) (mean)",
-        "cytotable_total_memory (multithread) (GB) (mean)",
-        "pycytominer_total_memory (GB) (mean)",
+        "cytotable_peak_memory (multiprocess) (GB) (mean)",
+        "cytotable_peak_memory (multithread) (GB) (mean)",
+        "pycytominer_peak_memory (GB) (mean)",
     ],
-    title="CytoTable and Pycytominer SQLite Total Memory Consumption with Min/Max Errors",
+    title="CytoTable and Pycytominer SQLite Peak Memory with Min/Max Errors",
     labels={"data_input_renamed": "Input File", "value": "Gigabytes (GB)"},
     height=500,
     width=900,
@@ -401,9 +370,9 @@ fig = px.line(
 # Add error bars for each trace
 for i, col in enumerate(
     [
-        "cytotable_total_memory (multiprocess) (GB)",
-        "cytotable_total_memory (multithread) (GB)",
-        "pycytominer_total_memory (GB)",
+        "cytotable_peak_memory (multiprocess) (GB)",
+        "cytotable_peak_memory (multithread) (GB)",
+        "pycytominer_peak_memory (GB)",
     ]
 ):
     fig.data[i].update(
@@ -419,9 +388,9 @@ for i, col in enumerate(
 
 # Rename the lines for the legend
 newnames = {
-    "cytotable_total_memory (multiprocess) (GB) (mean)": "CytoTable (multiprocess)",
-    "cytotable_total_memory (multithread) (GB) (mean)": "CytoTable (multithread)",
-    "pycytominer_total_memory (GB) (mean)": "Pycytominer",
+    "cytotable_peak_memory (multiprocess) (GB) (mean)": "CytoTable (multiprocess)",
+    "cytotable_peak_memory (multithread) (GB) (mean)": "CytoTable (multithread)",
+    "pycytominer_peak_memory (GB) (mean)": "Pycytominer",
 }
 fig.for_each_trace(
     lambda t: t.update(

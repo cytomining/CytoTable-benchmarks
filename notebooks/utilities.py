@@ -6,9 +6,14 @@ import pathlib
 import platform
 import time
 from typing import Callable, Optional
-
+from contextlib import closing
+import sqlite3
 import psutil
 import requests
+import subprocess
+import psutil
+import time
+from typing import List, Union, Tuple
 
 
 def timer(func: Callable, method_chain: Optional[str] = None, *args, **kwargs) -> float:
@@ -83,3 +88,74 @@ def get_system_info(show_output: bool = False) -> dict:
             print(f"{key}: {value}")
 
     return info
+
+
+def get_parsl_peak_memory(db_file: str) -> float:
+    """Retrieves the maximum resident memory from the resource table.
+
+    This function connects to the specified SQLite database, queries the
+    'resource' table for the maximum value of the
+    'psutil_process_memory_resident' column, and returns the result.
+
+    Args:
+        db_file: The path to the SQLite database file.
+
+    Returns:
+        The maximum resident memory value, or -1 if an error occurs
+        or the value is not found.
+    """
+    try:
+        with closing(sqlite3.connect(db_file)) as cx:
+            result = cx.execute(
+                "SELECT MAX(psutil_process_memory_resident) FROM resource;"
+            ).fetchone()
+
+        if result and result[0] is not None:
+            return float(result[0])
+        else:
+            return -1.0
+    except sqlite3.Error as e:
+        print(f"Error: {e}")
+        return -1.0
+
+
+def get_memory_peak_and_time_duration(
+    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 0.000001
+) -> Tuple[float, float]:
+    """
+    Track peak memory usage and runtime of a subprocess and its process tree.
+
+    This function runs the given command as a subprocess and monitors its
+    memory usage along with that of all child processes. It also measures
+    total wall-clock time until the subprocess exits.
+
+    Args:
+        cmd (List[Union[str, bytes]]):
+            Command to run as a subprocess, given
+            as a list (e.g., ["python", "-m", "your_module"]).
+        polling_pause_seconds (float):
+            Time in seconds to wait between memory checks.
+
+    Returns:
+        Tuple[float, float]: A tuple containing:
+            - Peak memory usage in megabytes (float).
+            - Total runtime in seconds (float).
+    """
+    start_time = time.time()
+    proc = subprocess.Popen(cmd)
+    root = psutil.Process(proc.pid)
+
+    peak = 0.0
+    try:
+        while proc.poll() is None:
+            children = root.children(recursive=True)
+            all_procs = [root] + children
+            # gather sum in bytes
+            mem = sum(p.memory_info().rss for p in all_procs if p.is_running())
+            peak = max(peak, mem)
+            time.sleep(polling_pause_seconds)
+    except psutil.NoSuchProcess:
+        pass
+
+    duration = time.time() - start_time
+    return peak, duration
