@@ -14,16 +14,12 @@ from parsl.config import Config
 from parsl.executors import ThreadPoolExecutor
 
 
-def main():
+if __name__ == "__main__":
     input_file = sys.argv[1]
     dest_path = (
         f"{pathlib.Path(__file__).parent.resolve()}/"
         f"{pathlib.Path(input_file).name}.cytotable.parquet"
     )
-
-    # clean up previous runs if they still exist
-    if pathlib.Path(dest_path).exists():
-        pathlib.Path(dest_path).unlink(missing_ok=True)
 
     result = cytotable.convert(
         source_path=input_file,
@@ -43,7 +39,3 @@ def main():
 
     # clean up file
     pathlib.Path(dest_path).unlink()
-
-
-if __name__ == "__main__":
-    main()
