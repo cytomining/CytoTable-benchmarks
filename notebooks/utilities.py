@@ -120,56 +120,40 @@ def get_parsl_peak_memory(db_file: str) -> float:
 
 
 def get_memory_peak_and_time_duration(
-    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 0.1
+    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 0.000001
 ) -> Tuple[float, float]:
     """
-    Track peak memory usage and runtime of a subprocess and its full process tree.
+    Track peak memory usage and runtime of a subprocess and its process tree.
 
-    This function runs the given command, tracks real memory usage (RSS) of all
-    its descendant processes, and waits until all have exited before returning.
+    This function runs the given command as a subprocess and monitors its
+    memory usage along with that of all child processes. It blocks until the
+    subprocess exits and returns peak memory and total duration.
 
     Args:
-        cmd: The command to run as a subprocess (e.g., ["python", "script.py"]).
-        polling_pause_seconds: How often to poll for memory usage.
+        cmd: Command to run as a subprocess (e.g., ["python", "your_script.py"]).
+        polling_pause_seconds: Time between memory checks.
 
     Returns:
-        Tuple of:
-            - peak memory in megabytes
-            - total runtime in seconds
+        Tuple[float, float]: Peak RSS in MB, total runtime in seconds.
     """
     start_time = time.time()
     proc = subprocess.Popen(cmd)
-    root = psutil.Process(proc.pid)
-
     peak = 0.0
 
     try:
+        root = psutil.Process(proc.pid)
+
         while True:
-            # Gather all still-running processes in the tree
             if not root.is_running():
                 break
-            try:
-                descendants = root.children(recursive=True)
-                all_procs = [root] + descendants
-            except psutil.NoSuchProcess:
-                break
-
-            # Remove zombie processes
-            all_procs = [
-                p
-                for p in all_procs
-                if p.is_running() and not p.status() == psutil.STATUS_ZOMBIE
-            ]
-
-            # Stop loop if no processes are alive
-            if not all_procs:
-                break
-
-            # Measure total RSS
-            mem = sum(p.memory_info().rss for p in all_procs)
+            children = root.children(recursive=True)
+            all_procs = [root] + children
+            mem = sum(p.memory_info().rss for p in all_procs if p.is_running())
             peak = max(peak, mem)
-
             time.sleep(polling_pause_seconds)
+
+        proc.wait()  # ensure all streams are flushed, process is finalized
+
     except psutil.NoSuchProcess:
         pass
 
