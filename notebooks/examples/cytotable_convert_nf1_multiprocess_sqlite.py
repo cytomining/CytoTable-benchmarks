@@ -24,6 +24,10 @@ if __name__ == "__main__":
         f"{pathlib.Path(input_file).name}.cytotable.parquet"
     )
 
+    # clean up previous runs if they still exist
+    if pathlib.Path(dest_path).exists():
+        pathlib.Path(dest_path).unlink()
+
     config = Config(
         executors=[
             HighThroughputExecutor(

@@ -21,6 +21,10 @@ def main():
         f"{pathlib.Path(input_file).name}.cytotable.parquet"
     )
 
+    # clean up previous runs if they still exist
+    if pathlib.Path(dest_path).exists():
+        pathlib.Path(dest_path).unlink()
+
     result = cytotable.convert(
         source_path=input_file,
         dest_path=dest_path,
