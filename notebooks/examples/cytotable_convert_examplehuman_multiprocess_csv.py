@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # clean up previous runs if they still exist
     if pathlib.Path(dest_path).exists():
-        pathlib.Path(dest_path).unlink()
+        pathlib.Path(dest_path).unlink(missing_ok=True)
 
     config = Config(
         executors=[

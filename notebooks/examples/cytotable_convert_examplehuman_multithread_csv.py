@@ -23,7 +23,7 @@ def main():
 
     # clean up previous runs if they still exist
     if pathlib.Path(dest_path).exists():
-        pathlib.Path(dest_path).unlink()
+        pathlib.Path(dest_path).unlink(missing_ok=True)
 
     result = cytotable.convert(
         source_path=input_file,
