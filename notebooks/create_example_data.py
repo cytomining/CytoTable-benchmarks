@@ -165,7 +165,7 @@ def multiply_csv_dataset_size(directory: str, multiplier: int = 2):
 # doubling the size each time
 number = 2
 previous_dir = pathlib.Path(orig_filepath_csv).resolve()
-for _ in range(0, 14):
+for _ in range(0, 13):
     new_dir = orig_filepath_csv.replace("_csv", f"_csv-x{number}")
     if pathlib.Path(new_dir).is_dir():
         shutil.rmtree(new_dir)
