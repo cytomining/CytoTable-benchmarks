@@ -141,7 +141,7 @@ for example_file, example_data in itertools.product(
                     example_file,
                     example_data,
                 ],
-                polling_pause_seconds=0.000001,
+                polling_pause_seconds=0.1,
             )
 
             # Append the result
