@@ -8,13 +8,12 @@ Note: intended to be used for profiling via memray.
 import pathlib
 import sys
 
+import cytotable
 import parsl
-from parsl.monitoring.monitoring import MonitoringHub
+from parsl.addresses import address_by_route
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor
-from parsl.addresses import address_by_route
-import pathlib
-import cytotable
+from parsl.monitoring.monitoring import MonitoringHub
 
 if __name__ == "__main__":
     input_file = sys.argv[1]

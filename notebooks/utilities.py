@@ -4,16 +4,14 @@ Utilities for running various benchmarks.
 
 import pathlib
 import platform
-import time
-from typing import Callable, Optional
-from contextlib import closing
 import sqlite3
+import subprocess
+import time
+from contextlib import closing
+from typing import Callable, List, Optional, Tuple, Union
+
 import psutil
 import requests
-import subprocess
-import psutil
-import time
-from typing import List, Union, Tuple
 
 
 def timer(func: Callable, method_chain: Optional[str] = None, *args, **kwargs) -> float:
@@ -120,33 +118,35 @@ def get_parsl_peak_memory(db_file: str) -> float:
 
 
 def get_memory_peak_and_time_duration(
-    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 1.0, skip_memory_check: bool = False
+    cmd: List[Union[str, bytes]],
+    polling_pause_seconds: float = 1.0,
+    skip_memory_check: bool = False,
 ) -> Tuple[float, float]:
     """
     Track peak memory usage and runtime of a subprocess and its process tree.
 
-    This function runs the given command as a subprocess and monitors its
-    memory usage along with that of all child processes. It blocks until the
+    This function runs the given command as a subprocess and optionally monitors
+    its memory usage along with that of all child processes. It blocks until the
     subprocess exits and returns peak memory and total duration.
 
     Args:
-        cmd: 
+        cmd:
             Command to run as a subprocess (e.g., ["python", "your_script.py"]).
         polling_pause_seconds:
-            Time between memory checks.
+            Time between memory checks (in seconds).
         skip_memory_check:
-            If True, skips memory checking and only check time.
+            If True, skips memory checking and only measures runtime.
             Returns -1 for peak memory in that case.
 
     Returns:
-        Tuple[float, float]: Peak RSS in MB, total runtime in seconds.
+        Tuple[float, float]: Peak RSS in MB (or -1 if skipped), total runtime in seconds.
     """
     start_time = time.time()
     proc = subprocess.Popen(cmd)
 
-    if not skip_memory_check:
-        peak = -1
+    peak = -1  # Default when skipping memory check
 
+    if not skip_memory_check:
         try:
             root = psutil.Process(proc.pid)
 
@@ -159,10 +159,9 @@ def get_memory_peak_and_time_duration(
                 peak = max(peak, mem)
                 time.sleep(polling_pause_seconds)
 
-            proc.wait()  # ensure all streams are flushed, process is finalized
-
         except psutil.NoSuchProcess:
             pass
 
+    proc.wait()
     duration = time.time() - start_time
     return peak, duration

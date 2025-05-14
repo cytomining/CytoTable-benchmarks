@@ -13,7 +13,6 @@ import parsl
 from parsl.config import Config
 from parsl.executors import ThreadPoolExecutor
 
-
 if __name__ == "__main__":
     input_file = sys.argv[1]
     dest_path = (
