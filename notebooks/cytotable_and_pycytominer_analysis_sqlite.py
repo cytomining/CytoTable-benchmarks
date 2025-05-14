@@ -13,11 +13,12 @@
 #     name: python3
 # ---
 
+# + [markdown] papermill={"duration": 0.006088, "end_time": "2025-05-14T17:09:51.303480", "exception": false, "start_time": "2025-05-14T17:09:51.297392", "status": "completed"}
 # # CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) Performance Comparisons
 #
 # This notebook explores CytoTable (convert) and Pycytominer (SingleCells.merge_single_cells) usage with datasets of varying size to help describe performance impacts.
 
-# +
+# + papermill={"duration": 0.788424, "end_time": "2025-05-14T17:09:52.097250", "exception": false, "start_time": "2025-05-14T17:09:51.308826", "status": "completed"}
 import itertools
 import json
 import os
@@ -42,11 +43,12 @@ from utilities import (
 pio.templates.default = "simple_white"
 # monitoring database for parsl multiprocessing work
 db_file = "runinfo/monitoring.db"
-# -
 
+# + papermill={"duration": 0.014269, "end_time": "2025-05-14T17:09:52.118742", "exception": false, "start_time": "2025-05-14T17:09:52.104473", "status": "completed"}
 # show the system information
 _ = get_system_info(show_output=True)
 
+# + papermill={"duration": 0.01906, "end_time": "2025-05-14T17:09:52.143028", "exception": false, "start_time": "2025-05-14T17:09:52.123968", "status": "completed"}
 # observe the virtual env for dependency inheritance with memray
 # from subprocedure calls
 "/".join(
@@ -65,7 +67,7 @@ _ = get_system_info(show_output=True)
     # replace final newline
 ).replace("\n", "")
 
-# +
+# + papermill={"duration": 0.013054, "end_time": "2025-05-14T17:09:52.161343", "exception": false, "start_time": "2025-05-14T17:09:52.148289", "status": "completed"}
 # target file or table names
 image_dir = "images"
 examples_dir = "examples"
@@ -96,7 +98,7 @@ example_data_list = [
 # format for memray time strings
 tformat = "%Y-%m-%d %H:%M:%S.%f%z"
 
-# +
+# + papermill={"duration": 0.013426, "end_time": "2025-05-14T17:09:52.179933", "exception": false, "start_time": "2025-05-14T17:09:52.166507", "status": "completed"}
 # Define the Parquet file path
 results_parquet_file = "cytotable_pycytominer_results.parquet"
 
@@ -107,7 +109,7 @@ if pathlib.Path(results_parquet_file).exists():
 else:
     results = []
 
-# +
+# + papermill={"duration": 3844.269619, "end_time": "2025-05-14T18:13:56.454944", "exception": false, "start_time": "2025-05-14T17:09:52.185325", "status": "completed"}
 # Number of iterations for each combination
 num_iterations = 6
 
@@ -187,7 +189,7 @@ df_results.to_parquet(results_parquet_file, index=False)
 print(f"Processing complete. Results saved to '{results_parquet_file}'.")
 
 
-# +
+# + papermill={"duration": 0.060065, "end_time": "2025-05-14T18:13:56.540533", "exception": false, "start_time": "2025-05-14T18:13:56.480468", "status": "completed"}
 # add columns for data understandability in plots
 def get_file_size_mb(file_path):
     """
@@ -218,8 +220,8 @@ df_results["data_input_renamed"] = (
     .str.replace("all_cellprofiler", "input")
 )
 df_results
-# -
 
+# + papermill={"duration": 0.080586, "end_time": "2025-05-14T18:13:56.639422", "exception": false, "start_time": "2025-05-14T18:13:56.558836", "status": "completed"}
 # build cols for split reference in the plot
 df_results["cytotable_time_duration (multiprocess) (secs)"] = df_results[
     df_results["file_input"] == "cytotable_convert_nf1_multiprocess_sqlite.py"
@@ -246,7 +248,7 @@ df_results = (
 )
 df_results
 
-# +
+# + papermill={"duration": 0.054746, "end_time": "2025-05-14T18:13:56.713702", "exception": false, "start_time": "2025-05-14T18:13:56.658956", "status": "completed"}
 # Group by data_input_renamed and calculate mean, min, and max
 aggregated_results = df_results.groupby("data_input_renamed").agg(
     {
@@ -280,7 +282,7 @@ aggregated_results = aggregated_results.sort_values(
 )
 aggregated_results
 
-# +
+# + papermill={"duration": 1.370439, "end_time": "2025-05-14T18:13:58.105031", "exception": false, "start_time": "2025-05-14T18:13:56.734592", "status": "completed"}
 # Time plot with min and max errors
 fig = px.line(
     aggregated_results,
@@ -349,7 +351,7 @@ fig.write_image(join_read_time_image)
 fig.write_image(join_read_time_image.replace(".png", ".svg"))
 Image(url=join_read_time_image.replace(".png", ".svg"))
 
-# +
+# + papermill={"duration": 0.35601, "end_time": "2025-05-14T18:13:58.483154", "exception": false, "start_time": "2025-05-14T18:13:58.127144", "status": "completed"}
 # Memory plot with min and max errors
 fig = px.line(
     aggregated_results,

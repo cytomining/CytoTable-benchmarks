@@ -13,12 +13,12 @@
 #     name: python3
 # ---
 
-# + [markdown] papermill={"duration": 0.003778, "end_time": "2025-04-17T22:22:59.184000", "exception": false, "start_time": "2025-04-17T22:22:59.180222", "status": "completed"}
+# + [markdown] papermill={"duration": 0.002917, "end_time": "2025-05-14T17:08:09.837556", "exception": false, "start_time": "2025-05-14T17:08:09.834639", "status": "completed"}
 # # Why Arrow?
 #
 # This notebook explores the benefits or drawbacks of using the [Arrow](https://arrow.apache.org) in-memory data format relative to other formats such as Pandas DataFrames.
 
-# + papermill={"duration": 3.415477, "end_time": "2025-04-17T22:23:02.603959", "exception": false, "start_time": "2025-04-17T22:22:59.188482", "status": "completed"}
+# + papermill={"duration": 0.652163, "end_time": "2025-05-14T17:08:10.495039", "exception": false, "start_time": "2025-05-14T17:08:09.842876", "status": "completed"}
 import pathlib
 
 import numpy as np
@@ -31,22 +31,22 @@ from pyarrow import parquet
 from pympler.asizeof import asizeof
 from utilities import get_system_info, timer
 
-# + papermill={"duration": 0.014791, "end_time": "2025-04-17T22:23:02.619817", "exception": false, "start_time": "2025-04-17T22:23:02.605026", "status": "completed"}
+# + papermill={"duration": 0.013927, "end_time": "2025-05-14T17:08:10.511606", "exception": false, "start_time": "2025-05-14T17:08:10.497679", "status": "completed"}
 # show the system information
 _ = get_system_info(show_output=True)
 
-# + papermill={"duration": 0.025353, "end_time": "2025-04-17T22:23:02.912867", "exception": false, "start_time": "2025-04-17T22:23:02.887514", "status": "completed"}
+# + papermill={"duration": 0.008306, "end_time": "2025-05-14T17:08:10.522475", "exception": false, "start_time": "2025-05-14T17:08:10.514169", "status": "completed"}
 # target file or table names
 image_dir = "images"
 parquet_name = "example.parquet"
 mem_times_image = f"{image_dir}/arrow-comparisons-mem-read-times.png"
 mem_read_size_image = f"{image_dir}/arrow-comparisons-mem-read-size.png"
 
-# + papermill={"duration": 0.015355, "end_time": "2025-04-17T22:23:02.929894", "exception": false, "start_time": "2025-04-17T22:23:02.914539", "status": "completed"}
+# + papermill={"duration": 0.007631, "end_time": "2025-05-14T17:08:10.532742", "exception": false, "start_time": "2025-05-14T17:08:10.525111", "status": "completed"}
 # remove any existing prior work
 pathlib.Path(parquet_name).unlink(missing_ok=True)
 
-# + papermill={"duration": 0.123737, "end_time": "2025-04-17T22:23:03.056555", "exception": false, "start_time": "2025-04-17T22:23:02.932818", "status": "completed"}
+# + papermill={"duration": 0.088766, "end_time": "2025-05-14T17:08:10.624040", "exception": false, "start_time": "2025-05-14T17:08:10.535274", "status": "completed"}
 # avoid a "cold start" for tested packages by using them before benchmarks
 df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
 # write to parquet for tests below
@@ -60,7 +60,7 @@ pl.scan_parquet(source=coldstart_file).collect()
 # remove the coldstart file
 pathlib.Path(coldstart_file).unlink(missing_ok=True)
 
-# + papermill={"duration": 1.276647, "end_time": "2025-04-17T22:23:04.335941", "exception": false, "start_time": "2025-04-17T22:23:03.059294", "status": "completed"}
+# + papermill={"duration": 1.879187, "end_time": "2025-05-14T17:08:12.506121", "exception": false, "start_time": "2025-05-14T17:08:10.626934", "status": "completed"}
 # starting rowcount and col count
 nrows = 320
 ncols = 160
@@ -109,7 +109,7 @@ for _ in range(1, 4):
 
 df_results = pd.DataFrame(results)
 df_results
-# + papermill={"duration": 4.500319, "end_time": "2025-04-17T22:23:08.837521", "exception": false, "start_time": "2025-04-17T22:23:04.337202", "status": "completed"}
+# + papermill={"duration": 1.327157, "end_time": "2025-05-14T17:08:13.838450", "exception": false, "start_time": "2025-05-14T17:08:12.511293", "status": "completed"}
 # write times barchart
 fig = px.bar(
     df_results,
@@ -136,7 +136,7 @@ pio.write_image(fig, mem_times_image)
 Image(url=mem_times_image)
 
 
-# + papermill={"duration": 0.174361, "end_time": "2025-04-17T22:23:09.013203", "exception": false, "start_time": "2025-04-17T22:23:08.838842", "status": "completed"}
+# + papermill={"duration": 0.210952, "end_time": "2025-05-14T17:08:14.055171", "exception": false, "start_time": "2025-05-14T17:08:13.844219", "status": "completed"}
 # write times barchart
 fig = px.bar(
     df_results,
@@ -161,4 +161,6 @@ fig.update_layout(
 
 pio.write_image(fig, mem_read_size_image)
 Image(url=mem_read_size_image)
-# -
+
+# + papermill={"duration": 0.005354, "end_time": "2025-05-14T17:08:14.066558", "exception": false, "start_time": "2025-05-14T17:08:14.061204", "status": "completed"}
+
