@@ -31,7 +31,7 @@ if __name__ == "__main__":
         ],
         monitoring=MonitoringHub(
             hub_address=address_by_route(),
-            resource_monitoring_interval=1.0,
+            resource_monitoring_interval=0.1,
         ),
         strategy="none",
     )
@@ -44,10 +44,6 @@ if __name__ == "__main__":
         preset="cellprofiler_csv",
         chunk_size=200000,
     )
-
-    # clear the parsl config
-    # to help clean up.
-    parsl.clear()
 
     # clean up file
     pathlib.Path(dest_path).unlink()

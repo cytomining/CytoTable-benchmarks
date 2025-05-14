@@ -11,7 +11,7 @@ import sys
 from pycytominer.cyto_utils.cells import SingleCells
 
 
-def main():
+if __name__ == "__main__":
     input_file = sys.argv[1]
     dest_path = (
         f"{pathlib.Path(__file__).parent.resolve()}/"
@@ -43,7 +43,3 @@ def main():
 
     # clean up file
     pathlib.Path(dest_path).unlink()
-
-
-if __name__ == "__main__":
-    main()

@@ -119,7 +119,7 @@ def get_parsl_peak_memory(db_file: str) -> float:
 
 def get_memory_peak_and_time_duration(
     cmd: List[Union[str, bytes]],
-    polling_pause_seconds: float = 1.0,
+    polling_pause_seconds: float = 0.1,
     skip_memory_check: bool = False,
 ) -> Tuple[float, float]:
     """

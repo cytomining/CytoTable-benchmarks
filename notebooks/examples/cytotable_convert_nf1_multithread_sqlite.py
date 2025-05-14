@@ -32,9 +32,5 @@ if __name__ == "__main__":
         ),
     )
 
-    # clear the parsl config
-    # to help clean up.
-    parsl.clear()
-
     # clean up file
     pathlib.Path(dest_path).unlink()

@@ -28,7 +28,7 @@ def col_renames(name: str, df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={col: rename(col) for col in df.columns})
 
 
-def main():
+if __name__ == "__main__":
     input_file = sys.argv[1]
     dest_path = (
         f"{pathlib.Path(__file__).parent.resolve()}/"
@@ -91,7 +91,3 @@ def main():
 
     # clean up file
     pathlib.Path(dest_path).unlink()
-
-
-if __name__ == "__main__":
-    main()

@@ -19,13 +19,18 @@
 
 # +
 import itertools
+import json
+import os
 import pathlib
 import re
+import signal
 import subprocess
+from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import psutil
 from IPython.display import Image
 from utilities import (
     get_memory_peak_and_time_duration,
@@ -115,6 +120,7 @@ for example_file, example_data in itertools.product(
     example_files_list, example_data_list
 ):
     for iteration in range(num_iterations):
+
         print(f"Starting {example_file} with {example_data}, iteration {iteration}.")
         # Skip if this combination and iteration are already processed
         if any(
@@ -136,7 +142,7 @@ for example_file, example_data in itertools.product(
                     example_file,
                     example_data,
                 ],
-                polling_pause_seconds=1.0,
+                polling_pause_seconds=0.1,
                 # if we have a multiprocessed parsl process skip memory
                 # (we will check this via parsl monitoring).
                 skip_memory_check=("multiprocess" in example_file),
