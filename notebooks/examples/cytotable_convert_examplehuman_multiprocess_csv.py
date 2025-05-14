@@ -32,7 +32,7 @@ if __name__ == "__main__":
         ],
         monitoring=MonitoringHub(
             hub_address=address_by_route(),
-            resource_monitoring_interval=0.1,
+            resource_monitoring_interval=1.0,
         ),
         strategy="none",
     )

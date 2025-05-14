@@ -120,7 +120,7 @@ def get_parsl_peak_memory(db_file: str) -> float:
 
 
 def get_memory_peak_and_time_duration(
-    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 0.000001
+    cmd: List[Union[str, bytes]], polling_pause_seconds: float = 1.0, skip_memory_check: bool = False
 ) -> Tuple[float, float]:
     """
     Track peak memory usage and runtime of a subprocess and its process tree.
@@ -130,32 +130,39 @@ def get_memory_peak_and_time_duration(
     subprocess exits and returns peak memory and total duration.
 
     Args:
-        cmd: Command to run as a subprocess (e.g., ["python", "your_script.py"]).
-        polling_pause_seconds: Time between memory checks.
+        cmd: 
+            Command to run as a subprocess (e.g., ["python", "your_script.py"]).
+        polling_pause_seconds:
+            Time between memory checks.
+        skip_memory_check:
+            If True, skips memory checking and only check time.
+            Returns -1 for peak memory in that case.
 
     Returns:
         Tuple[float, float]: Peak RSS in MB, total runtime in seconds.
     """
     start_time = time.time()
     proc = subprocess.Popen(cmd)
-    peak = 0.0
 
-    try:
-        root = psutil.Process(proc.pid)
+    if not skip_memory_check:
+        peak = -1
 
-        while True:
-            if not root.is_running():
-                break
-            children = root.children(recursive=True)
-            all_procs = [root] + children
-            mem = sum(p.memory_info().rss for p in all_procs if p.is_running())
-            peak = max(peak, mem)
-            time.sleep(polling_pause_seconds)
+        try:
+            root = psutil.Process(proc.pid)
 
-        proc.wait()  # ensure all streams are flushed, process is finalized
+            while True:
+                if not root.is_running():
+                    break
+                children = root.children(recursive=True)
+                all_procs = [root] + children
+                mem = sum(p.memory_info().rss for p in all_procs if p.is_running())
+                peak = max(peak, mem)
+                time.sleep(polling_pause_seconds)
 
-    except psutil.NoSuchProcess:
-        pass
+            proc.wait()  # ensure all streams are flushed, process is finalized
+
+        except psutil.NoSuchProcess:
+            pass
 
     duration = time.time() - start_time
     return peak, duration

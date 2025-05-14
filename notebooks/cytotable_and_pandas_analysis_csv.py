@@ -94,7 +94,7 @@ example_data_list = [
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x1024",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x2048",
     f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x4096",
-    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8192"
+    f"{examples_dir}/data/examplehuman_cellprofiler_features_csv-x8192",
 ]
 
 # format for memray time strings
@@ -121,6 +121,7 @@ for example_file, example_data in itertools.product(
 ):
     for iteration in range(num_iterations):
 
+        print(f"Starting {example_file} with {example_data}, iteration {iteration}.")
         # Skip if this combination and iteration are already processed
         if any(
             result["file_input"] == example_file
@@ -141,7 +142,10 @@ for example_file, example_data in itertools.product(
                     example_file,
                     example_data,
                 ],
-                polling_pause_seconds=0.1,
+                polling_pause_seconds=1.0,
+                # if we have a multiprocessed parsl process skip memory
+                # (we will check this via parsl monitoring).
+                skip_memory_check=("multiprocess" in example_file),
             )
 
             # Append the result

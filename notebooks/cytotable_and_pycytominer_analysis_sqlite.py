@@ -117,6 +117,7 @@ for example_file, example_data in itertools.product(
 ):
     for iteration in range(num_iterations):
 
+        print(f"Starting {example_file} with {example_data}, iteration {iteration}.")
         # Skip if this combination and iteration are already processed
         if any(
             result["file_input"] == example_file
@@ -137,7 +138,10 @@ for example_file, example_data in itertools.product(
                     example_file,
                     example_data,
                 ],
-                polling_pause_seconds=0.1,
+                polling_pause_seconds=1.0,
+                # if we have a multiprocessed parsl process skip memory
+                # (we will check this via parsl monitoring).
+                skip_memory_check=("multiprocess" in example_file),
             )
 
             # Append the result
