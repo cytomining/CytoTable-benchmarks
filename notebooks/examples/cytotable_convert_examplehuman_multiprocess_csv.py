@@ -43,6 +43,7 @@ if __name__ == "__main__":
         source_datatype="csv",
         preset="cellprofiler_csv",
         chunk_size=200000,
+        parsl_config=config,
     )
 
     # clean up file
