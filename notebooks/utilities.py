@@ -119,49 +119,53 @@ def get_parsl_peak_memory(db_file: str) -> float:
 
 def get_memory_peak_and_time_duration(
     cmd: List[Union[str, bytes]],
-    polling_pause_seconds: float = 0.1,
-    skip_memory_check: bool = False,
+    polling_pause_seconds: float = 0.2,
+    skip_memory_check: bool = False
 ) -> Tuple[float, float]:
     """
     Track peak memory usage and runtime of a subprocess and its process tree.
 
-    This function runs the given command as a subprocess and optionally monitors
-    its memory usage along with that of all child processes. It blocks until the
-    subprocess exits and returns peak memory and total duration.
-
     Args:
         cmd:
-            Command to run as a subprocess (e.g., ["python", "your_script.py"]).
+            Command to run as a subprocess (e.g., ["python", "script.py"]).
         polling_pause_seconds:
-            Time between memory checks (in seconds).
+            Time between memory checks (default: 0.2s).
         skip_memory_check:
-            If True, skips memory checking and only measures runtime.
-            Returns -1 for peak memory in that case.
+            If True, skip memory check and only time execution.
 
     Returns:
-        Tuple[float, float]: Peak RSS in MB (or -1 if skipped), total runtime in seconds.
+        Tuple[float, float]: Peak memory in MB (or -1 if skipped), and total runtime in seconds.
     """
     start_time = time.time()
-    proc = subprocess.Popen(cmd)
+    proc = subprocess.Popen(cmd, start_new_session=True)
+    peak = -1.0  # default if skipped or error
 
-    peak = -1  # Default when skipping memory check
+    if skip_memory_check:
+        proc.wait()
+        return -1.0, time.time() - start_time
 
-    if not skip_memory_check:
-        try:
-            root = psutil.Process(proc.pid)
+    try:
+        root = psutil.Process(proc.pid)
+        peak = 0.0
 
-            while True:
-                if not root.is_running():
-                    break
-                children = root.children(recursive=True)
-                all_procs = [root] + children
-                mem = sum(p.memory_info().rss for p in all_procs if p.is_running())
+        while proc.poll() is None:
+            try:
+                all_procs = [root] + root.children(recursive=True)
+                mem = 0
+                for p in all_procs:
+                    try:
+                        if p.is_running():
+                            mem += p.memory_info().rss
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
                 peak = max(peak, mem)
-                time.sleep(polling_pause_seconds)
+            except (psutil.NoSuchProcess, psutil.ZombieProcess):
+                # Root died while polling, break cleanly
+                break
+            time.sleep(polling_pause_seconds)
 
-        except psutil.NoSuchProcess:
-            pass
-
-    proc.wait()
-    duration = time.time() - start_time
-    return peak, duration
+    finally:
+        # Always wait to make sure process has ended
+        proc.wait()
+        duration = time.time() - start_time
+        return peak, duration
