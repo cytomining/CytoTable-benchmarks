@@ -1,5 +1,7 @@
 # 🛠️ CytoTable benchmarks
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15425830.svg)](https://doi.org/10.5281/zenodo.15425830)
+
 A repository for analyzing various benchmarks related to [CytoTable](https://github.com/cytomining/CytoTable).
 
 ## Installation
