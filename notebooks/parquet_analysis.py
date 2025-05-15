@@ -13,12 +13,12 @@
 #     name: python3
 # ---
 
-# + [markdown] papermill={"duration": 0.001726, "end_time": "2025-04-17T22:25:11.037015", "exception": false, "start_time": "2025-04-17T22:25:11.035289", "status": "completed"}
+# + [markdown] papermill={"duration": 0.005861, "end_time": "2025-05-14T17:08:18.714587", "exception": false, "start_time": "2025-05-14T17:08:18.708726", "status": "completed"}
 # # Why Parquet?
 #
 # This notebook explores the benefits or drawbacks of using the [parquet](https://parquet.apache.org/docs/) file format relative to other formats such as CSV or SQLite.
 
-# + papermill={"duration": 1.740825, "end_time": "2025-04-17T22:25:12.780756", "exception": false, "start_time": "2025-04-17T22:25:11.039931", "status": "completed"}
+# + papermill={"duration": 0.583058, "end_time": "2025-05-14T17:08:19.303101", "exception": false, "start_time": "2025-05-14T17:08:18.720043", "status": "completed"}
 import os
 import pathlib
 
@@ -26,16 +26,14 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-import sqlalchemy
 from IPython.display import Image
-from utilities import timer
-from utilities import get_system_info
+from utilities import get_system_info, timer
 
-# + papermill={"duration": 0.014286, "end_time": "2025-04-17T22:25:12.797048", "exception": false, "start_time": "2025-04-17T22:25:12.782762", "status": "completed"}
+# + papermill={"duration": 0.013558, "end_time": "2025-05-14T17:08:19.322066", "exception": false, "start_time": "2025-05-14T17:08:19.308508", "status": "completed"}
 # show the system information
 _ = get_system_info(show_output=True)
 
-# + papermill={"duration": 0.029821, "end_time": "2025-04-17T22:25:12.829782", "exception": false, "start_time": "2025-04-17T22:25:12.799961", "status": "completed"}
+# + papermill={"duration": 0.011987, "end_time": "2025-05-14T17:08:19.339250", "exception": false, "start_time": "2025-05-14T17:08:19.327263", "status": "completed"}
 # target file or table names
 image_dir = "images"
 csv_name = "example.csv.gz"
@@ -51,7 +49,7 @@ file_read_time_one_image = (
     f"{image_dir}/parquet-comparisons-file-read-time-one-column.png"
 )
 
-# + papermill={"duration": 0.406891, "end_time": "2025-04-17T22:25:13.239611", "exception": false, "start_time": "2025-04-17T22:25:12.832720", "status": "completed"}
+# + papermill={"duration": 0.261715, "end_time": "2025-05-14T17:08:19.605977", "exception": false, "start_time": "2025-05-14T17:08:19.344262", "status": "completed"}
 # avoid a "cold start" for tested packages by using them before benchmarks
 df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
 # export and read using various methods
@@ -62,12 +60,12 @@ pd.read_sql(sql=f"SELECT * FROM {sqlite_tbl_name}", con=f"sqlite:///{sqlite_name
 df.to_parquet(path=parquet_name, compression="gzip")
 pd.read_parquet(path=parquet_name)
 
-# + papermill={"duration": 0.027402, "end_time": "2025-04-17T22:25:13.268300", "exception": false, "start_time": "2025-04-17T22:25:13.240898", "status": "completed"}
+# + papermill={"duration": 0.012958, "end_time": "2025-05-14T17:08:19.624817", "exception": false, "start_time": "2025-05-14T17:08:19.611859", "status": "completed"}
 # remove any existing prior work
 for filename in [csv_name, parquet_name, sqlite_name]:
     pathlib.Path(filename).unlink(missing_ok=True)
 
-# + papermill={"duration": 15.803726, "end_time": "2025-04-17T22:25:29.075218", "exception": false, "start_time": "2025-04-17T22:25:13.271492", "status": "completed"}
+# + papermill={"duration": 24.982215, "end_time": "2025-05-14T17:08:44.612490", "exception": false, "start_time": "2025-05-14T17:08:19.630275", "status": "completed"}
 # starting rowcount and col count
 nrows = 320
 ncols = 160
@@ -143,7 +141,7 @@ for _ in range(1, 4):
 df_results = pd.DataFrame(results)
 df_results
 
-# + papermill={"duration": 1.202152, "end_time": "2025-04-17T22:25:30.278740", "exception": false, "start_time": "2025-04-17T22:25:29.076588", "status": "completed"}
+# + papermill={"duration": 1.252307, "end_time": "2025-05-14T17:08:45.871726", "exception": false, "start_time": "2025-05-14T17:08:44.619419", "status": "completed"}
 # write times barchart
 fig = px.bar(
     df_results,
@@ -170,7 +168,7 @@ fig.update_layout(
 pio.write_image(fig, file_write_time_image)
 Image(url=file_write_time_image)
 
-# + papermill={"duration": 0.179752, "end_time": "2025-04-17T22:25:30.459941", "exception": false, "start_time": "2025-04-17T22:25:30.280189", "status": "completed"}
+# + papermill={"duration": 0.257468, "end_time": "2025-05-14T17:08:46.135855", "exception": false, "start_time": "2025-05-14T17:08:45.878387", "status": "completed"}
 # filesize barchart
 fig = px.bar(
     df_results,
@@ -197,7 +195,7 @@ fig.update_layout(
 pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
 
-# + papermill={"duration": 0.250983, "end_time": "2025-04-17T22:25:30.714849", "exception": false, "start_time": "2025-04-17T22:25:30.463866", "status": "completed"}
+# + papermill={"duration": 0.159619, "end_time": "2025-05-14T17:08:46.301590", "exception": false, "start_time": "2025-05-14T17:08:46.141971", "status": "completed"}
 # read time barchart (all columns)
 fig = px.line(
     df_results,
@@ -224,7 +222,7 @@ fig.update_traces(mode="lines+markers")
 pio.write_image(fig, file_read_time_all_image)
 Image(url=file_read_time_all_image)
 
-# + papermill={"duration": 0.183621, "end_time": "2025-04-17T22:25:30.900005", "exception": false, "start_time": "2025-04-17T22:25:30.716384", "status": "completed"}
+# + papermill={"duration": 0.146281, "end_time": "2025-05-14T17:08:46.454748", "exception": false, "start_time": "2025-05-14T17:08:46.308467", "status": "completed"}
 # read time barchart (one column)
 fig = px.line(
     df_results,

@@ -52,10 +52,14 @@ formats = "ipynb,py:light"
 
 # defines a task for running cytotable benchmarks
 
-[tool.poe.tasks.run-cytotable-benchmarks]
+[tool.poe.tasks.create-data-and-run-benchmarks]
+# creates data and runs all benchmarks
 # sets a cwd relative for the shell script below
 cwd = "notebooks"
 shell = """
+  printf "Cleaning up previous run data\n\n" &&
+  rm -rf ./*.parquet || true &&
+  rm -rf ./examples/*.cytotable.parquet || true &&
   printf "Creating example data\n\n" &&
   python create_example_data.py &&
   printf "Running Arrow benchmarks\n\n" &&
@@ -64,6 +68,40 @@ shell = """
   papermill parquet_analysis.ipynb parquet_analysis.ipynb &&
   printf "Running DuckDB benchmarks\n\n" &&
   papermill duckdb_analysis.ipynb duckdb_analysis.ipynb &&
-  printf "Running CytoTable and Pycytominer benchmarks\n\n" &&
-  papermill cytotable_and_pycytominer_analysis.ipynb cytotable_and_pycytominer_analysis.ipynb
+  printf "Running CytoTable and Pycytominer benchmarks (SQLite)\n\n" &&
+  papermill cytotable_and_pycytominer_analysis_sqlite.ipynb cytotable_and_pycytominer_analysis_sqlite.ipynb &&
+  printf "Running CytoTable and Pandas benchmarks (CSV)\n\n" &&
+  papermill cytotable_and_pandas_analysis_csv.ipynb cytotable_and_pandas_analysis_csv.ipynb
+  printf "Updating Python scripts based on notebook runs\n\n" &&
+  jupytext arrow_analysis.ipynb --to .py &&
+  jupytext parquet_analysis.ipynb --to .py &&
+  jupytext duckdb_analysis.ipynb --to .py &&
+  jupytext cytotable_and_pycytominer_analysis_sqlite.ipynb --to .py &&
+  jupytext cytotable_and_pandas_analysis_csv.ipynb --to .py
+"""
+
+[tool.poe.tasks.run-benchmarks]
+# runs all benchmarks without creating data
+# sets a cwd relative for the shell script below
+cwd = "notebooks"
+shell = """
+  printf "Cleaning up previous run data\n\n" &&
+  rm -rf ./*.parquet || true &&
+  rm -rf ./examples/*.cytotable.parquet || true &&
+  printf "Running Arrow benchmarks\n\n" &&
+  papermill arrow_analysis.ipynb arrow_analysis.ipynb &&
+  printf "Running Parquet benchmarks\n\n" &&
+  papermill parquet_analysis.ipynb parquet_analysis.ipynb &&
+  printf "Running DuckDB benchmarks\n\n" &&
+  papermill duckdb_analysis.ipynb duckdb_analysis.ipynb &&
+  printf "Running CytoTable and Pycytominer benchmarks (SQLite)\n\n" &&
+  papermill cytotable_and_pycytominer_analysis_sqlite.ipynb cytotable_and_pycytominer_analysis_sqlite.ipynb &&
+  printf "Running CytoTable and Pandas benchmarks (CSV)\n\n" &&
+  papermill cytotable_and_pandas_analysis_csv.ipynb cytotable_and_pandas_analysis_csv.ipynb
+  printf "Updating Python scripts based on notebook runs\n\n" &&
+  jupytext arrow_analysis.ipynb --to .py &&
+  jupytext parquet_analysis.ipynb --to .py &&
+  jupytext duckdb_analysis.ipynb --to .py &&
+  jupytext cytotable_and_pycytominer_analysis_sqlite.ipynb --to .py &&
+  jupytext cytotable_and_pandas_analysis_csv.ipynb --to .py
 """

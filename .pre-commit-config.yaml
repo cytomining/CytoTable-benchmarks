@@ -49,10 +49,11 @@ repos:
         additional_dependencies:
         -   "types-requests"
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.11.6"
+    rev: "v0.11.10"
     hooks:
     -   id: ruff-format
     -   id: ruff
+        args: ["--fix"]
 -   repo: https://github.com/executablebooks/mdformat
     rev: 0.7.21
     hooks:
@@ -63,12 +64,12 @@ repos:
     rev: "v2.5.1"
     hooks:
     -   id: pyproject-fmt
--   repo: https://github.com/citation-file-format/cffconvert
-    rev: 5295f87c0e261da61a7b919fc754e3a77edd98a7
-    hooks:
-    -   id: validate-cff
 -   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
     rev: v0.6.0
     hooks:
     -   id: pre-commit-update
         args: ["--keep", "mdformat", "--keep", "pre-commit-update", "--keep", "cffconvert"]
+-   repo: https://github.com/citation-file-format/cffconvert
+    rev: b6045d78aac9e02b039703b030588d54d53262ac
+    hooks:
+    -   id: validate-cff

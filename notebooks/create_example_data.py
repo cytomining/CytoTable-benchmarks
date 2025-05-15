@@ -24,32 +24,37 @@ import sqlite3
 
 import duckdb
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 from pyarrow import csv, parquet
 from utilities import download_file
+
 # -
 
 url = "https://github.com/cytomining/CytoTable/blob/main/tests/data/cellprofiler/NF1_SchwannCell_data/all_cellprofiler.sqlite?raw=true"
-orig_filepath = "./examples/data/all_cellprofiler.sqlite"
+orig_filepath_sqlite = "./examples/data/all_cellprofiler.sqlite"
+orig_filepath_csv = "./examples/data/examplehuman_cellprofiler_features_csv"
 
 # create a data dir
-pathlib.Path(orig_filepath).parent.mkdir(exist_ok=True)
+pathlib.Path(orig_filepath_sqlite).parent.mkdir(exist_ok=True)
 
 # download the original file
-download_file(url, orig_filepath)
+download_file(url, orig_filepath_sqlite)
 
 # create a duplicate file for use in looped testing
 shutil.copy(
-    orig_filepath,
-    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate"),
+    orig_filepath_sqlite,
+    orig_filepath_sqlite.replace("all_cellprofiler", "all_cellprofiler_duplicate"),
 )
 shutil.copy(
-    orig_filepath,
-    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate_two"),
+    orig_filepath_sqlite,
+    orig_filepath_sqlite.replace("all_cellprofiler", "all_cellprofiler_duplicate_two"),
 )
 shutil.copy(
-    orig_filepath,
-    orig_filepath.replace("all_cellprofiler", "all_cellprofiler_duplicate_three"),
+    orig_filepath_sqlite,
+    orig_filepath_sqlite.replace(
+        "all_cellprofiler", "all_cellprofiler_duplicate_three"
+    ),
 )
 
 
@@ -106,12 +111,67 @@ def multiply_database_size(filename: str, multiplier: int = 2):
 # loop for copying the database and
 # doubling the database size each time
 number = 2
-previous_filepath = orig_filepath
+previous_filepath = orig_filepath_sqlite
 for _ in range(0, 9):
-    new_filepath = orig_filepath.replace(".sqlite", f"-x{number}.sqlite")
+    new_filepath = orig_filepath_sqlite.replace(".sqlite", f"-x{number}.sqlite")
     shutil.copy(previous_filepath, new_filepath)
     multiply_database_size(filename=new_filepath, multiplier=2)
     previous_filepath = new_filepath
+    number *= 2
+
+
+def multiply_csv_dataset_size(directory: str, multiplier: int = 2):
+    """
+    A function for multiplying the size of CSV datasets by duplicating rows and
+    incrementing ImageNumber identifiers to simulate larger datasets.
+
+    Assumes CSV files are named like: Per_Image.csv, Per_Cytoplasm.csv, etc.
+
+    Parameters:
+    - directory: str or Path to the folder containing the CSV files.
+    - multiplier: how many total multiples of the data to generate (default is 2x).
+    """
+    directory = pathlib.Path(directory)
+    tables = ["Image", "Cytoplasm", "Nuclei", "Cells"]
+
+    for tablename in tables:
+        filepath = directory / f"{tablename}.csv"
+        if not filepath.exists():
+            print(f"Skipping missing file: {filepath}")
+            continue
+
+        df = pd.read_csv(filepath)
+        print(f"Start count {tablename}: {len(df)}")
+
+        if "ImageNumber" not in df.columns:
+            print(f"Skipping {tablename} — missing 'ImageNumber' column.")
+            continue
+
+        max_id = df["ImageNumber"].max()
+        new_dfs = [df]  # original data
+
+        for i in range(1, multiplier):
+            df_copy = df.copy()
+            df_copy["ImageNumber"] += max_id * i
+            new_dfs.append(df_copy)
+
+        full_df = pd.concat(new_dfs, ignore_index=True)
+        full_df.to_csv(filepath, index=False)
+
+        print(f"End count {tablename}: {len(full_df)}")
+
+
+# loop for copying sets of csv's and
+# doubling the size each time
+number = 2
+previous_dir = pathlib.Path(orig_filepath_csv).resolve()
+for _ in range(0, 13):
+    new_dir = orig_filepath_csv.replace("_csv", f"_csv-x{number}")
+    if pathlib.Path(new_dir).is_dir():
+        shutil.rmtree(new_dir)
+    shutil.copytree(previous_dir, new_dir)
+    multiply_csv_dataset_size(new_dir, multiplier=2)
+    previous_dir = new_dir
     number *= 2
 
 # add example parquet file
@@ -122,16 +182,16 @@ duckdb.connect().execute(
     LOAD sqlite_scanner;
 
     /* Copy content from nuclei table to parquet file */
-    COPY (select * from sqlite_scan('{orig_filepath}', 'Per_Nuclei')) 
-    TO '{orig_filepath + '.nuclei.parquet'}'
+    COPY (select * from sqlite_scan('{orig_filepath_sqlite}', 'Per_Nuclei'))
+    TO '{orig_filepath_sqlite + ".nuclei.parquet"}'
     (FORMAT PARQUET);
     """,
 ).close()
 
 # create a duplicate file for use in looped testing
 shutil.copy(
-    orig_filepath + ".nuclei.parquet",
-    orig_filepath + ".nuclei-copy.parquet",
+    orig_filepath_sqlite + ".nuclei.parquet",
+    orig_filepath_sqlite + ".nuclei-copy.parquet",
 )
 
 # create randomized number data and related pyarrow table
