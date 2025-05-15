@@ -168,3 +168,6 @@ runinfo
 *memray*
 
 notebooks/*.parquet
+
+notebooks/cytotable-issue-187/*.csv
+notebooks/cytotable-issue-187/*.parquet
