@@ -35,6 +35,10 @@ keywords:
   - pycytominer
   - benchmarking
 license: BSD-3-Clause
+identifiers:
+  - description: Software DOI
+    type: doi
+    value: "10.5281/zenodo.15425830"
 references:
   - type: software
     title: CytoTable
