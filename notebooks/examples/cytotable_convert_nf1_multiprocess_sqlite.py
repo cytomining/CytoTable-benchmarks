@@ -9,7 +9,6 @@ import pathlib
 import sys
 
 import cytotable
-import parsl
 from parsl.addresses import address_by_route
 from parsl.config import Config
 from parsl.executors import HighThroughputExecutor

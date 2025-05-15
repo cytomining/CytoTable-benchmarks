@@ -9,7 +9,6 @@ import pathlib
 import sys
 
 import cytotable
-import parsl
 from parsl.config import Config
 from parsl.executors import ThreadPoolExecutor
 

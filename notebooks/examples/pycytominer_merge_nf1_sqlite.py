@@ -10,7 +10,6 @@ import sys
 
 from pycytominer.cyto_utils.cells import SingleCells
 
-
 if __name__ == "__main__":
     input_file = sys.argv[1]
     dest_path = (

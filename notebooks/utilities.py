@@ -120,7 +120,7 @@ def get_parsl_peak_memory(db_file: str) -> float:
 def get_memory_peak_and_time_duration(
     cmd: List[Union[str, bytes]],
     polling_pause_seconds: float = 0.2,
-    skip_memory_check: bool = False
+    skip_memory_check: bool = False,
 ) -> Tuple[float, float]:
     """
     Track peak memory usage and runtime of a subprocess and its process tree.
