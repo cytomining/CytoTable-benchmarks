@@ -25,7 +25,6 @@ import shutil
 from typing import Literal
 
 import anndata as ad
-import duckdb
 import numpy as np
 import pandas as pd
 import plotly.express as px

@@ -51,7 +51,6 @@ zarr = [
   { version = ">=3.1.1", python = ">=3.12" },
 ]
 
-
 [tool.vulture]
 min_confidence = 80
 paths = [ "notebooks" ]
