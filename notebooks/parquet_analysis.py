@@ -380,7 +380,7 @@ fig.update_layout(
 )
 
 pio.write_image(fig, file_write_time_image)
-fig.show()
+Image(url=file_write_time_image)
 
 # + papermill={"duration": 0.257468, "end_time": "2025-05-14T17:08:46.135855", "exception": false, "start_time": "2025-05-14T17:08:45.878387", "status": "completed"}
 key = "dataframe_shape (rows, cols)"
@@ -432,7 +432,7 @@ fig.update_layout(
 )
 
 pio.write_image(fig, file_storage_size_image)
-Image(url=file_read_time_one_image)
+Image(url=file_storage_size_image)
 
 # + papermill={"duration": 0.159619, "end_time": "2025-05-14T17:08:46.301590", "exception": false, "start_time": "2025-05-14T17:08:46.141971", "status": "completed"}
 # read time barchart (all columns)
@@ -480,7 +480,6 @@ stats = pd.concat(parts, ignore_index=True)
 
 y_order = result[key].iloc[::-1].tolist()
 
-print(stats)
 fig = px.bar(
     stats.sort_values(by="format"),
     x="mean",
@@ -501,7 +500,7 @@ fig.update_layout(
 )
 
 pio.write_image(fig, file_read_time_all_image)
-fig.show()
+Image(url=file_read_time_all_image)
 
 # + papermill={"duration": 0.146281, "end_time": "2025-05-14T17:08:46.454748", "exception": false, "start_time": "2025-05-14T17:08:46.308467", "status": "completed"}
 # read time barchart (one column)
