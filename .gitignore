@@ -171,3 +171,7 @@ notebooks/*.parquet
 
 notebooks/cytotable-issue-187/*.csv
 notebooks/cytotable-issue-187/*.parquet
+
+notebooks/*.sqlite
+notebooks/adata*
+notebooks/*.csv.gz

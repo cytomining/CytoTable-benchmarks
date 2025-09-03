@@ -350,8 +350,7 @@ parts = []
 for fmt, (mcol, mincol, maxcol) in cols.items():
     tmp = result[[key, mcol, mincol, maxcol]].copy()
     tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"},
-               inplace=True)
+    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
     tmp["err_plus"] = tmp["max"] - tmp["mean"]
     tmp["err_minus"] = tmp["mean"] - tmp["min"]
     parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
@@ -403,17 +402,15 @@ long = df_results.melt(
 )
 long["format"] = long["col"].map(size_cols)
 
-stats = (
-    long.groupby([key, "format"], as_index=False)["bytes"]
-        .mean()
-)
+stats = long.groupby([key, "format"], as_index=False)["bytes"].mean()
 
 # Descending y-axis by total size across formats (largest first).
 # Swap this for a format-specific sort if you prefer (see below).
 y_order = (
-    stats.groupby(key, as_index=False)["bytes"].sum()
-         .sort_values("bytes", ascending=False)[key]
-         .tolist()
+    stats.groupby(key, as_index=False)["bytes"]
+    .sum()
+    .sort_values("bytes", ascending=False)[key]
+    .tolist()
 )
 
 fig = px.bar(
@@ -473,8 +470,7 @@ parts = []
 for fmt, (mcol, mincol, maxcol) in cols.items():
     tmp = result[[key, mcol, mincol, maxcol]].copy()
     tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"},
-               inplace=True)
+    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
     tmp["err_plus"] = tmp["max"] - tmp["mean"]
     tmp["err_minus"] = tmp["mean"] - tmp["min"]
     parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
