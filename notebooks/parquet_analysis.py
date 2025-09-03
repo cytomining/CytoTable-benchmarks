@@ -13,12 +13,12 @@
 #     name: python3
 # ---
 
-# + [markdown] papermill={"duration": 0.005861, "end_time": "2025-05-14T17:08:18.714587", "exception": false, "start_time": "2025-05-14T17:08:18.708726", "status": "completed"}
+# + [markdown] papermill={"duration": 0.006888, "end_time": "2025-09-03T21:55:12.133407", "exception": false, "start_time": "2025-09-03T21:55:12.126519", "status": "completed"}
 # # Why Parquet?
 #
 # This notebook explores the benefits or drawbacks of using the [parquet](https://parquet.apache.org/docs/) file format relative to other formats such as CSV or SQLite.
 
-# + papermill={"duration": 0.583058, "end_time": "2025-05-14T17:08:19.303101", "exception": false, "start_time": "2025-05-14T17:08:18.720043", "status": "completed"}
+# + papermill={"duration": 1.269103, "end_time": "2025-09-03T21:55:13.408073", "exception": false, "start_time": "2025-09-03T21:55:12.138970", "status": "completed"}
 import os
 import pathlib
 import shutil
@@ -33,11 +33,11 @@ import plotly.io as pio
 from IPython.display import Image
 from utilities import get_system_info, timer
 
-# + papermill={"duration": 0.013558, "end_time": "2025-05-14T17:08:19.322066", "exception": false, "start_time": "2025-05-14T17:08:19.308508", "status": "completed"}
+# + papermill={"duration": 0.015148, "end_time": "2025-09-03T21:55:13.429168", "exception": false, "start_time": "2025-09-03T21:55:13.414020", "status": "completed"}
 # show the system information
 _ = get_system_info(show_output=True)
 
-# + papermill={"duration": 0.011987, "end_time": "2025-05-14T17:08:19.339250", "exception": false, "start_time": "2025-05-14T17:08:19.327263", "status": "completed"}
+# + papermill={"duration": 0.049587, "end_time": "2025-09-03T21:55:13.484421", "exception": false, "start_time": "2025-09-03T21:55:13.434834", "status": "completed"}
 # target file or table names
 image_dir = "images"
 csv_name = "example.csv.gz"
@@ -63,7 +63,7 @@ if pathlib.Path(anndata_zarr_name).is_dir():
     shutil.rmtree(anndata_zarr_name)
 
 
-# +
+# + papermill={"duration": 0.017819, "end_time": "2025-09-03T21:55:13.509355", "exception": false, "start_time": "2025-09-03T21:55:13.491536", "status": "completed"}
 def write_anndata(
     df: pd.DataFrame,
     write_to: Literal["h5ad", "zarr"],
@@ -147,7 +147,7 @@ def read_anndata(
     return adata.obs.join(adata.to_df(), how="left").reset_index(drop=True)
 
 
-# + papermill={"duration": 0.261715, "end_time": "2025-05-14T17:08:19.605977", "exception": false, "start_time": "2025-05-14T17:08:19.344262", "status": "completed"}
+# + papermill={"duration": 0.242991, "end_time": "2025-09-03T21:55:13.758506", "exception": false, "start_time": "2025-09-03T21:55:13.515515", "status": "completed"}
 # avoid a "cold start" for tested packages by using them before benchmarks
 df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
 # export and read using various methods
@@ -158,12 +158,12 @@ pd.read_sql(sql=f"SELECT * FROM {sqlite_tbl_name}", con=f"sqlite:///{sqlite_name
 df.to_parquet(path=parquet_name, compression="gzip")
 pd.read_parquet(path=parquet_name)
 
-# + papermill={"duration": 0.012958, "end_time": "2025-05-14T17:08:19.624817", "exception": false, "start_time": "2025-05-14T17:08:19.611859", "status": "completed"}
+# + papermill={"duration": 0.013525, "end_time": "2025-09-03T21:55:13.778550", "exception": false, "start_time": "2025-09-03T21:55:13.765025", "status": "completed"}
 # remove any existing prior work
 for filename in [csv_name, parquet_name, sqlite_name]:
     pathlib.Path(filename).unlink(missing_ok=True)
 
-# + papermill={"duration": 24.982215, "end_time": "2025-05-14T17:08:44.612490", "exception": false, "start_time": "2025-05-14T17:08:19.630275", "status": "completed"}
+# + papermill={"duration": 126.463193, "end_time": "2025-09-03T21:57:20.248198", "exception": false, "start_time": "2025-09-03T21:55:13.785005", "status": "completed"}
 # starting rowcount and col count
 nrows = 320
 ncols = 160
@@ -283,7 +283,7 @@ for _ in range(1, 4):
 df_results = pd.DataFrame(results)
 df_results
 
-# +
+# + papermill={"duration": 0.048407, "end_time": "2025-09-03T21:57:20.305775", "exception": false, "start_time": "2025-09-03T21:57:20.257368", "status": "completed"}
 average = (
     df_results.groupby("dataframe_shape (rows, cols)")
     .mean()
@@ -315,7 +315,7 @@ result = (
 
 result
 
-# +
+# + papermill={"duration": 1.365292, "end_time": "2025-09-03T21:57:21.680374", "exception": false, "start_time": "2025-09-03T21:57:20.315082", "status": "completed"}
 key = "dataframe_shape (rows, cols)"
 
 cols = {
@@ -382,7 +382,7 @@ fig.update_layout(
 pio.write_image(fig, file_write_time_image)
 Image(url=file_write_time_image)
 
-# + papermill={"duration": 0.257468, "end_time": "2025-05-14T17:08:46.135855", "exception": false, "start_time": "2025-05-14T17:08:45.878387", "status": "completed"}
+# + papermill={"duration": 0.313924, "end_time": "2025-09-03T21:57:22.005171", "exception": false, "start_time": "2025-09-03T21:57:21.691247", "status": "completed"}
 key = "dataframe_shape (rows, cols)"
 
 size_cols = {
@@ -434,7 +434,7 @@ fig.update_layout(
 pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
 
-# + papermill={"duration": 0.159619, "end_time": "2025-05-14T17:08:46.301590", "exception": false, "start_time": "2025-05-14T17:08:46.141971", "status": "completed"}
+# + papermill={"duration": 0.250629, "end_time": "2025-09-03T21:57:22.266295", "exception": false, "start_time": "2025-09-03T21:57:22.015666", "status": "completed"}
 # read time barchart (all columns)
 key = "dataframe_shape (rows, cols)"
 
@@ -502,7 +502,7 @@ fig.update_layout(
 pio.write_image(fig, file_read_time_all_image)
 Image(url=file_read_time_all_image)
 
-# + papermill={"duration": 0.146281, "end_time": "2025-05-14T17:08:46.454748", "exception": false, "start_time": "2025-05-14T17:08:46.308467", "status": "completed"}
+# + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
 # read time barchart (one column)
 fig = px.line(
     df_results,
