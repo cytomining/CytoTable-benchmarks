@@ -226,7 +226,7 @@ results = []
 
 # loop for iterating over increasingly large dataframes
 # and gathering data about operations on them
-for _ in range(1, 8):
+for _ in range(1, 7):
     # increase the size of the dataframe
     nrows *= 2
     ncols *= 2
