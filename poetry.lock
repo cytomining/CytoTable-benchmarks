@@ -2084,7 +2084,6 @@ description = "Read and write HDF5 files from Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "python_version <= \"3.10\" or python_version == \"3.12\""
 files = [
     {file = "h5py-3.14.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:24df6b2622f426857bda88683b16630014588a0e4155cba44e872eb011c4eaed"},
     {file = "h5py-3.14.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:6ff2389961ee5872de697054dd5a033b04284afc3fb52dc51d94561ece2c10c6"},
@@ -2116,6 +2115,29 @@ files = [
 
 [package.dependencies]
 numpy = ">=1.19.3"
+
+[[package]]
+name = "hdf5plugin"
+version = "5.1.0"
+description = "HDF5 Plugins for Windows, MacOS, and Linux"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "hdf5plugin-5.1.0-py3-none-macosx_10_13_universal2.whl", hash = "sha256:6f88bdc3ebf1d7393557d6c70811552f76f8fdd275988a7d2c904633f1a21a1d"},
+    {file = "hdf5plugin-5.1.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0151f844e5f7de0e26cc2de275a339f6936c825fee915cbd54318e22a913c00a"},
+    {file = "hdf5plugin-5.1.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:b613e16d376d3b37fd2d76893e356c402100bd68a02abbe960a98e8257ca8758"},
+    {file = "hdf5plugin-5.1.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6da81b0b168f271b0cf995a12c28cf01b381587fed21f25fd91b2c90d5108425"},
+    {file = "hdf5plugin-5.1.0-py3-none-win_amd64.whl", hash = "sha256:6be3409554bde676db0f1ab46a27e87ea73d7974f359f354a738c812618261d1"},
+    {file = "hdf5plugin-5.1.0.tar.gz", hash = "sha256:cf78f1426b5868128b9ec6c498b70d6734e1dc8007a8ed1e7282954ab421b3fa"},
+]
+
+[package.dependencies]
+h5py = ">=3.0.0"
+
+[package.extras]
+doc = ["ipython", "nbsphinx", "sphinx", "sphinx_rtd_theme"]
+test = ["blosc2 (>=2.5.1) ; python_version >= \"3.9\"", "blosc2-grok (>=0.2.2) ; python_version >= \"3.9\""]
 
 [[package]]
 name = "httpcore"
@@ -6385,4 +6407,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.0,<3.13"
-content-hash = "260cb720f78b1db69f78b3867405d9e08983a673c6d9b8780cfa14a435e8a886"
+content-hash = "4fc24e0bea50756ab0dee8242924b328a8ce4c42eb3cbccbaef9adaf590f2a3c"

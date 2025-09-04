@@ -22,15 +22,23 @@
 import os
 import pathlib
 import shutil
+import string
+import warnings
 from typing import Literal
 
 import anndata as ad
+import duckdb
+import hdf5plugin
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+from anndata import ImplicitModificationWarning
 from IPython.display import Image
 from utilities import get_system_info, timer
+
+# ignore anndata warnings about index conversion
+warnings.filterwarnings("ignore", category=ImplicitModificationWarning)
 
 # + papermill={"duration": 0.015148, "end_time": "2025-09-03T21:55:13.429168", "exception": false, "start_time": "2025-09-03T21:55:13.414020", "status": "completed"}
 # show the system information
@@ -40,10 +48,17 @@ _ = get_system_info(show_output=True)
 # target file or table names
 image_dir = "images"
 csv_name = "example.csv.gz"
-parquet_name = "example.parquet"
+parquet_noc_name = "example.parquet"
+parquet_snappy_name = "example.snappy.parquet"
+parquet_gzip_name = "example.gzip.parquet"
+parquet_lz4_name = "example.lz4.parquet"
+parquet_zstd_name = "example.zstd.parquet"
 sqlite_name = "example.sqlite"
 sqlite_tbl_name = "tbl_example"
-anndata_h5_name = "adata.h5ad"
+anndata_h5_noc_name = "adata.noc.h5ad"
+anndata_h5_gzip_name = "adata.gzip.h5ad"
+anndata_h5_lz4_name = "adata.lz4.h5ad"
+anndata_h5_zstd_name = "adata.zstd.h5ad"
 anndata_zarr_name = "adata.zarr"
 file_write_time_image = f"{image_dir}/parquet-comparisons-file-write-time.png"
 file_storage_size_image = f"{image_dir}/parquet-comparisons-file-storage-size.png"
@@ -54,18 +69,39 @@ file_read_time_one_image = (
     f"{image_dir}/parquet-comparisons-file-read-time-one-column.png"
 )
 
-pathlib.Path(csv_name).unlink(missing_ok=True)
-pathlib.Path(parquet_name).unlink(missing_ok=True)
-pathlib.Path(sqlite_name).unlink(missing_ok=True)
-pathlib.Path(anndata_h5_name).unlink(missing_ok=True)
-if pathlib.Path(anndata_zarr_name).is_dir():
-    shutil.rmtree(anndata_zarr_name)
+
+def remove_files():
+    """
+    Utility function to remove files as needed.
+    """
+    for name in [
+        csv_name,
+        parquet_noc_name,
+        parquet_snappy_name,
+        parquet_gzip_name,
+        parquet_lz4_name,
+        parquet_zstd_name,
+        sqlite_name,
+        anndata_h5_noc_name,
+        anndata_h5_gzip_name,
+        anndata_h5_lz4_name,
+        anndata_h5_zstd_name,
+    ]:
+        pathlib.Path(name).unlink(missing_ok=True)
+
+    if pathlib.Path(anndata_zarr_name).is_dir():
+        shutil.rmtree(anndata_zarr_name)
+
+
+# remove all files just in case
+remove_files()
 
 
 # + papermill={"duration": 0.017819, "end_time": "2025-09-03T21:55:13.509355", "exception": false, "start_time": "2025-09-03T21:55:13.491536", "status": "completed"}
 def write_anndata(
     df: pd.DataFrame,
     write_to: Literal["h5ad", "zarr"],
+    compression: Literal["gzip", "lz4", "zstd", "none"],
     dest_path: str,
 ) -> str:
     """
@@ -81,6 +117,8 @@ def write_anndata(
             Input table with rows as observations and columns as features.
         write_to:
             Output format. Either ``"h5ad"`` or ``"zarr"``.
+        compression:
+            The type of compression to use with
         dest_path:
             Destination file (``.h5ad``) or directory (zarr store)
             to write to. Parent directories are created if missing.
@@ -97,14 +135,24 @@ def write_anndata(
 
     non_numeric = df.select_dtypes(exclude=["number"])
 
-    adata = ad.AnnData(X=numeric.to_numpy())
+    adata = ad.AnnData(X=numeric)
     adata.obs_names = df.index.astype(str)
     adata.var_names = numeric.columns.astype(str)
     # Align non-numeric obs metadata to the same index
-    adata.obs = non_numeric.copy()
+    adata.obs = non_numeric
 
     if write_to == "h5ad":
-        adata.write_h5ad(str(dest))
+        # we default to use None for compression
+        # meaning no compression.
+        comp_arg = None
+        if compression == "gzip":
+            comp_arg = "gzip"
+        elif compression == "zstd":
+            comp_arg = hdf5plugin.FILTERS["zstd"]
+        elif compression == "lz4":
+            comp_arg = hdf5plugin.FILTERS["lz4"]
+
+        adata.write_h5ad(filename=str(dest), compression=comp_arg)
     elif write_to == "zarr":
         # For zarr, the destination is a directory-like store
         adata.write_zarr(str(dest))
@@ -117,6 +165,7 @@ def write_anndata(
 def read_anndata(
     path: str,
     read_from: Literal["h5ad", "zarr"],
+    read_one: bool = False,
 ) -> pd.DataFrame:
     """
     Load an AnnData file (h5ad or zarr) as a single pandas DataFrame.
@@ -130,6 +179,8 @@ def read_anndata(
             store; for h5ad, a file path.
         read_from:
             Input format. Either ``"h5ad"`` or ``"zarr"``.
+        read_one:
+            Whether to read just one column.
 
     Returns:
         A pandas DataFrame with ``.obs`` columns followed by the numeric
@@ -143,6 +194,9 @@ def read_anndata(
     else:
         raise ValueError('read_from must be "h5ad" or "zarr".')
 
+    if read_one:
+        return adata.to_df()["col_2"]
+
     return adata.obs.join(adata.to_df(), how="left").reset_index(drop=True)
 
 
@@ -154,25 +208,25 @@ df.to_csv(path_or_buf=csv_name, compression="gzip")
 pd.read_csv(filepath_or_buffer=csv_name, compression="gzip")
 df.to_sql(name=sqlite_tbl_name, con=f"sqlite:///{sqlite_name}")
 pd.read_sql(sql=f"SELECT * FROM {sqlite_tbl_name}", con=f"sqlite:///{sqlite_name}")
-df.to_parquet(path=parquet_name, compression="gzip")
-pd.read_parquet(path=parquet_name)
+df.to_parquet(path=parquet_gzip_name, compression="gzip")
+pd.read_parquet(path=parquet_gzip_name)
 
 # + papermill={"duration": 0.013525, "end_time": "2025-09-03T21:55:13.778550", "exception": false, "start_time": "2025-09-03T21:55:13.765025", "status": "completed"}
 # remove any existing prior work
-for filename in [csv_name, parquet_name, sqlite_name]:
+for filename in [csv_name, parquet_gzip_name, sqlite_name]:
     pathlib.Path(filename).unlink(missing_ok=True)
 
 # + papermill={"duration": 126.463193, "end_time": "2025-09-03T21:57:20.248198", "exception": false, "start_time": "2025-09-03T21:55:13.785005", "status": "completed"}
 # starting rowcount and col count
 nrows = 320
-ncols = 160
+ncols = 124
 
 # result list for storing data
 results = []
 
 # loop for iterating over increasingly large dataframes
 # and gathering data about operations on them
-for _ in range(1, 4):
+for _ in range(1, 8):
     # increase the size of the dataframe
     nrows *= 2
     ncols *= 2
@@ -182,26 +236,30 @@ for _ in range(1, 4):
         np.random.rand(nrows, ncols), columns=[f"col_{num}" for num in range(0, ncols)]
     )
 
+    # add some string data
+    alphabet = np.array(list(string.ascii_lowercase + string.digits))
+    df = df.assign(
+        **{
+            f"str_{i+1}": [
+                "".join(np.random.default_rng(10).choice(alphabet, 10))
+                for _ in range(len(df))
+            ]
+            for i in range(10)
+        }
+    )
+
+    print(df.shape)
+
     # run multiple times for error and average
     for _ in range(1, 5):
         # remove any existing files in preparation for next steps
-        for filename in [
-            csv_name,
-            parquet_name,
-            sqlite_name,
-            anndata_h5_name,
-            anndata_zarr_name,
-        ]:
-            if pathlib.Path(filename).is_dir():
-                shutil.rmtree(anndata_zarr_name)
-            else:
-                pathlib.Path(filename).unlink(missing_ok=True)
+        remove_files()
         # append data to the result list
         results.append(
             {
                 # general information about the dataframe
                 "dataframe_shape (rows, cols)": str(df.shape),
-                # information about CSV
+                # information about CSV (uncompressed)
                 "csv_write_time (secs)": timer(
                     df.to_csv, path_or_buf=csv_name, compression="gzip"
                 ),
@@ -216,40 +274,126 @@ for _ in range(1, 4):
                     usecols=["col_2"],
                 ),
                 # information about SQLite
-                "sqlite_write_time (secs)": timer(
-                    df.to_sql,
-                    name=sqlite_tbl_name,
-                    con=f"sqlite:///{sqlite_name}",
+                "sqlite_write_time (secs)": (
+                    timer(
+                        df.to_sql,
+                        name=sqlite_tbl_name,
+                        con=f"sqlite:///{sqlite_name}",
+                    )
+                    if ncols < 2000
+                    else None
                 ),
-                "sqlite_size (bytes)": os.stat(sqlite_name).st_size,
-                "sqlite_read_time_all (secs)": timer(
-                    pd.read_sql,
-                    sql=f"SELECT * FROM {sqlite_tbl_name}",
-                    con=f"sqlite:///{sqlite_name}",
+                "sqlite_size (bytes)": (
+                    os.stat(sqlite_name).st_size if ncols < 2000 else None
                 ),
-                "sqlite_read_time_one (secs)": timer(
-                    pd.read_sql,
-                    sql=f"SELECT col_2 FROM {sqlite_tbl_name}",
-                    con=f"sqlite:///{sqlite_name}",
+                "sqlite_read_time_all (secs)": (
+                    timer(
+                        pd.read_sql,
+                        sql=f"SELECT * FROM {sqlite_tbl_name}",
+                        con=f"sqlite:///{sqlite_name}",
+                    )
+                    if ncols < 2000
+                    else None
                 ),
-                # information about anndata h5ad
-                "anndata_h5ad_write_time (secs)": timer(
+                "sqlite_read_time_one (secs)": (
+                    timer(
+                        pd.read_sql,
+                        sql=f"SELECT col_2 FROM {sqlite_tbl_name}",
+                        con=f"sqlite:///{sqlite_name}",
+                    )
+                    if ncols < 2000
+                    else None
+                ),
+                # information about anndata h5ad (no compression)
+                "anndata_h5ad_noc_write_time (secs)": timer(
                     write_anndata,
                     df=df,
                     write_to="h5ad",
-                    dest_path=anndata_h5_name,
+                    compression="none",
+                    dest_path=anndata_h5_noc_name,
                 ),
-                "anndata_h5ad_size (bytes)": os.stat(anndata_h5_name).st_size,
-                "anndata_h5ad_read_time_all (secs)": timer(
+                "anndata_h5ad_noc_size (bytes)": os.stat(anndata_h5_noc_name).st_size,
+                "anndata_h5ad_noc_read_time_all (secs)": timer(
                     read_anndata,
-                    path=anndata_h5_name,
+                    path=anndata_h5_noc_name,
                     read_from="h5ad",
+                    read_one=False,
+                ),
+                "anndata_h5ad_noc_read_time_one (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_noc_name,
+                    read_from="h5ad",
+                    read_one=True,
+                ),
+                # information about anndata h5ad (gzip)
+                "anndata_h5ad_gzip_write_time (secs)": timer(
+                    write_anndata,
+                    df=df,
+                    write_to="h5ad",
+                    compression="gzip",
+                    dest_path=anndata_h5_gzip_name,
+                ),
+                "anndata_h5ad_gzip_size (bytes)": os.stat(anndata_h5_gzip_name).st_size,
+                "anndata_h5ad_gzip_read_time_all (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_gzip_name,
+                    read_from="h5ad",
+                    read_one=False,
+                ),
+                "anndata_h5ad_gzip_read_time_one (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_gzip_name,
+                    read_from="h5ad",
+                    read_one=True,
+                ),
+                # information about anndata h5ad (lz4)
+                "anndata_h5ad_lz4_write_time (secs)": timer(
+                    write_anndata,
+                    df=df,
+                    write_to="h5ad",
+                    compression="lz4",
+                    dest_path=anndata_h5_lz4_name,
+                ),
+                "anndata_h5ad_lz4_size (bytes)": os.stat(anndata_h5_lz4_name).st_size,
+                "anndata_h5ad_lz4_read_time_all (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_lz4_name,
+                    read_from="h5ad",
+                    read_one=False,
+                ),
+                "anndata_h5ad_lz4_read_time_one (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_lz4_name,
+                    read_from="h5ad",
+                    read_one=True,
+                ),
+                # information about anndata h5ad (zstd)
+                "anndata_h5ad_zstd_write_time (secs)": timer(
+                    write_anndata,
+                    df=df,
+                    write_to="h5ad",
+                    compression="zstd",
+                    dest_path=anndata_h5_zstd_name,
+                ),
+                "anndata_h5ad_zstd_size (bytes)": os.stat(anndata_h5_zstd_name).st_size,
+                "anndata_h5ad_zstd_read_time_all (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_zstd_name,
+                    read_from="h5ad",
+                    read_one=False,
+                ),
+                "anndata_h5ad_zstd_read_time_one (secs)": timer(
+                    read_anndata,
+                    path=anndata_h5_zstd_name,
+                    read_from="h5ad",
+                    read_one=True,
                 ),
                 # information about anndata zarr
                 "anndata_zarr_write_time (secs)": timer(
                     write_anndata,
                     df=df,
                     write_to="zarr",
+                    compression="none",
                     dest_path=anndata_zarr_name,
                 ),
                 # note: we use a comprehension below to recurse through
@@ -263,17 +407,68 @@ for _ in range(1, 4):
                     read_anndata,
                     path=anndata_zarr_name,
                     read_from="zarr",
+                    read_one=False,
                 ),
-                # information about Parquet
-                "parquet_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_name, compression="gzip"
+                "anndata_zarr_read_time_one (secs)": timer(
+                    read_anndata,
+                    path=anndata_zarr_name,
+                    read_from="zarr",
+                    read_one=True,
                 ),
-                "parquet_size (bytes)": os.stat(parquet_name).st_size,
-                "parquet_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_name
+                # information about Parquet with no compression
+                "parquet_noc_write_time (secs)": timer(
+                    df.to_parquet, path=parquet_noc_name, compression=None
                 ),
-                "parquet_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_name, columns=["col_2"]
+                "parquet_noc_size (bytes)": os.stat(parquet_noc_name).st_size,
+                "parquet_noc_read_time_all (secs)": timer(
+                    pd.read_parquet, path=parquet_noc_name
+                ),
+                "parquet_noc_read_time_one (secs)": timer(
+                    pd.read_parquet, path=parquet_noc_name, columns=["col_2"]
+                ),
+                # information about Parquet with snappy compression
+                "parquet_snappy_write_time (secs)": timer(
+                    df.to_parquet, path=parquet_snappy_name, compression="snappy"
+                ),
+                "parquet_snappy_size (bytes)": os.stat(parquet_snappy_name).st_size,
+                "parquet_snappy_read_time_all (secs)": timer(
+                    pd.read_parquet, path=parquet_snappy_name
+                ),
+                "parquet_snappy_read_time_one (secs)": timer(
+                    pd.read_parquet, path=parquet_snappy_name, columns=["col_2"]
+                ),
+                # information about Parquet with gzip compression
+                "parquet_gzip_write_time (secs)": timer(
+                    df.to_parquet, path=parquet_gzip_name, compression="gzip"
+                ),
+                "parquet_gzip_size (bytes)": os.stat(parquet_gzip_name).st_size,
+                "parquet_gzip_read_time_all (secs)": timer(
+                    pd.read_parquet, path=parquet_gzip_name
+                ),
+                "parquet_gzip_read_time_one (secs)": timer(
+                    pd.read_parquet, path=parquet_gzip_name, columns=["col_2"]
+                ),
+                # information about Parquet with zstd compression
+                "parquet_zstd_write_time (secs)": timer(
+                    df.to_parquet, path=parquet_zstd_name, compression="zstd"
+                ),
+                "parquet_zstd_size (bytes)": os.stat(parquet_zstd_name).st_size,
+                "parquet_zstd_read_time_all (secs)": timer(
+                    pd.read_parquet, path=parquet_zstd_name
+                ),
+                "parquet_zstd_read_time_one (secs)": timer(
+                    pd.read_parquet, path=parquet_zstd_name, columns=["col_2"]
+                ),
+                # information about Parquet with lz4 compression
+                "parquet_lz4_write_time (secs)": timer(
+                    df.to_parquet, path=parquet_lz4_name, compression="lz4"
+                ),
+                "parquet_lz4_size (bytes)": os.stat(parquet_lz4_name).st_size,
+                "parquet_lz4_read_time_all (secs)": timer(
+                    pd.read_parquet, path=parquet_lz4_name
+                ),
+                "parquet_lz4_read_time_one (secs)": timer(
+                    pd.read_parquet, path=parquet_lz4_name, columns=["col_2"]
                 ),
             }
         )
@@ -318,7 +513,7 @@ result
 key = "dataframe_shape (rows, cols)"
 
 cols = {
-    "CSV": (
+    "CSV (GZIP)": (
         "csv_write_time (secs) mean",
         "csv_write_time (secs) min",
         "csv_write_time (secs) max",
@@ -328,20 +523,55 @@ cols = {
         "sqlite_write_time (secs) min",
         "sqlite_write_time (secs) max",
     ),
-    "AnnData (H5AD)": (
-        "anndata_h5ad_write_time (secs) mean",
-        "anndata_h5ad_write_time (secs) min",
-        "anndata_h5ad_write_time (secs) max",
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_write_time (secs) mean",
+        "anndata_h5ad_noc_write_time (secs) min",
+        "anndata_h5ad_noc_write_time (secs) max",
+    ),
+    "AnnData (H5AD - GZIP)": (
+        "anndata_h5ad_gzip_write_time (secs) mean",
+        "anndata_h5ad_gzip_write_time (secs) min",
+        "anndata_h5ad_gzip_write_time (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_write_time (secs) mean",
+        "anndata_h5ad_zstd_write_time (secs) min",
+        "anndata_h5ad_zstd_write_time (secs) max",
+    ),
+    "AnnData (H5AD - LZ4) (": (
+        "anndata_h5ad_lz4_write_time (secs) mean",
+        "anndata_h5ad_lz4_write_time (secs) min",
+        "anndata_h5ad_lz4_write_time (secs) max",
     ),
     "AnnData (Zarr)": (
         "anndata_zarr_write_time (secs) mean",
         "anndata_zarr_write_time (secs) min",
         "anndata_zarr_write_time (secs) max",
     ),
-    "Parquet": (
-        "parquet_write_time (secs) mean",
-        "parquet_write_time (secs) min",
-        "parquet_write_time (secs) max",
+    "Parquet (uncompressed)": (
+        "parquet_noc_write_time (secs) mean",
+        "parquet_noc_write_time (secs) min",
+        "parquet_noc_write_time (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_write_time (secs) mean",
+        "parquet_snappy_write_time (secs) min",
+        "parquet_snappy_write_time (secs) max",
+    ),
+    "Parquet (GZIP)": (
+        "parquet_gzip_write_time (secs) mean",
+        "parquet_gzip_write_time (secs) min",
+        "parquet_gzip_write_time (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_write_time (secs) mean",
+        "parquet_zstd_write_time (secs) min",
+        "parquet_zstd_write_time (secs) max",
+    ),
+    "Parquet (LZ4)": (
+        "parquet_lz4_write_time (secs) mean",
+        "parquet_lz4_write_time (secs) min",
+        "parquet_lz4_write_time (secs) max",
     ),
 }
 
@@ -357,26 +587,30 @@ for fmt, (mcol, mincol, maxcol) in cols.items():
 
 stats = pd.concat(parts, ignore_index=True)
 
-y_order = result[key].iloc[::-1].tolist()
+x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
+pos = {k: i for i, k in enumerate(x_order)}  # category → position index
 
-fig = px.bar(
-    stats.sort_values(by="format"),
-    x="mean",
-    y=key,
+# 2) give each row its x position and sort per-trace
+stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+fig = px.line(
+    stats,  # already trace-sorted by xpos
+    x=key,
+    y="mean",
     color="format",
-    error_x="err_plus",
-    error_x_minus="err_minus",
-    orientation="h",
-    barmode="group",
-    category_orders={key: y_order},
-    labels={key: "Data Shape", "mean": "Seconds"},
+    error_y="err_plus",
+    error_y_minus="err_minus",
+    markers=True,
+    category_orders={key: x_order},  # sets axis order & legend hover categories
+    labels={key: "Data Shape", "mean": "Seconds (log)"},
     width=1300,
+    log_y=True,
 )
-fig.update_layout(
-    legend_title_text="File Write Duration",
-    legend=dict(x=0.68, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
-    font=dict(size=18),
+fig.update_traces(mode="lines+markers")
+fig.update_traces(marker_color=None, line_color=None).update_layout(
+    colorway=px.colors.qualitative.Dark24
 )
+
 
 pio.write_image(fig, file_write_time_image)
 Image(url=file_write_time_image)
@@ -385,50 +619,60 @@ Image(url=file_write_time_image)
 key = "dataframe_shape (rows, cols)"
 
 size_cols = {
-    "csv_size (bytes)": "CSV",
+    "csv_size (bytes)": "CSV (GZIP)",
     "sqlite_size (bytes)": "SQLite",
-    "anndata_h5ad_size (bytes)": "AnnData (H5AD)",
+    "anndata_h5ad_noc_size (bytes)": "AnnData (H5AD - uncompressed)",
+    "anndata_h5ad_gzip_size (bytes)": "AnnData (H5AD - GZIP)",
+    "anndata_h5ad_lz4_size (bytes)": "AnnData (H5AD - LZ4)",
+    "anndata_h5ad_zstd_size (bytes)": "AnnData (H5AD - ZSTD)",
     "anndata_zarr_size (bytes)": "AnnData (Zarr)",
-    "parquet_size (bytes)": "Parquet",
+    "parquet_noc_size (bytes)": "Parquet (uncompressed)",
+    "parquet_snappy_size (bytes)": "Parquet (Snappy)",
+    "parquet_gzip_size (bytes)": "Parquet (GZIP)",
+    "parquet_zstd_size (bytes)": "Parquet (ZSTD)",
+    "parquet_lz4_size (bytes)": "Parquet (LZ4)",
 }
 
-# Long-form; if you have repeated runs per shape, we'll average them
+# Long-form + average across repeats
 long = df_results.melt(
     id_vars=[key],
     value_vars=list(size_cols.keys()),
     var_name="col",
     value_name="bytes",
-)
+).dropna(subset=["bytes"])
 long["format"] = long["col"].map(size_cols)
 
 stats = long.groupby([key, "format"], as_index=False)["bytes"].mean()
 
-# Descending y-axis by total size across formats (largest first).
-# Swap this for a format-specific sort if you prefer (see below).
-y_order = (
-    stats.groupby(key, as_index=False)["bytes"]
-    .sum()
-    .sort_values("bytes", ascending=False)[key]
-    .tolist()
-)
+# Choose x-axis category order (keep your current result order, reversed here).
+x_order = result[key].iloc[::-1].tolist()
 
-fig = px.bar(
-    stats.sort_values(by="format"),
-    x="bytes",
-    y=key,
+# Ensure each trace's points follow that order (pre-sort rows)
+pos = {cat: i for i, cat in enumerate(x_order)}
+stats_sorted = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+fig = px.line(
+    stats_sorted,
+    x=key,
+    y="bytes",
     color="format",
-    orientation="h",
-    barmode="group",
-    category_orders={key: result[key].iloc[::-1].tolist()},
+    markers=True,
+    category_orders={key: x_order},
     labels={key: "Data Shape", "bytes": "Bytes"},
     width=1300,
 )
 
+fig.update_traces(mode="lines+markers")
 fig.update_layout(
     legend_title_text="File Size",
     legend=dict(x=0.72, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
     font=dict(size=18),
 )
+fig.update_xaxes(autorange="reversed")
+fig.update_traces(marker_color=None, line_color=None).update_layout(
+    colorway=px.colors.qualitative.Dark24
+)
+
 
 pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
@@ -438,7 +682,7 @@ Image(url=file_storage_size_image)
 key = "dataframe_shape (rows, cols)"
 
 cols = {
-    "CSV": (
+    "CSV (GZIP)": (
         "csv_read_time_all (secs) mean",
         "csv_read_time_all (secs) min",
         "csv_read_time_all (secs) max",
@@ -448,20 +692,55 @@ cols = {
         "sqlite_read_time_all (secs) min",
         "sqlite_read_time_all (secs) max",
     ),
-    "AnnData (H5AD)": (
-        "anndata_h5ad_read_time_all (secs) mean",
-        "anndata_h5ad_read_time_all (secs) min",
-        "anndata_h5ad_read_time_all (secs) max",
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_read_time_all (secs) mean",
+        "anndata_h5ad_noc_read_time_all (secs) min",
+        "anndata_h5ad_noc_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - GZIP)": (
+        "anndata_h5ad_gzip_read_time_all (secs) mean",
+        "anndata_h5ad_gzip_read_time_all (secs) min",
+        "anndata_h5ad_gzip_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_read_time_all (secs) mean",
+        "anndata_h5ad_zstd_read_time_all (secs) min",
+        "anndata_h5ad_zstd_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - LZ4) (": (
+        "anndata_h5ad_lz4_read_time_all (secs) mean",
+        "anndata_h5ad_lz4_read_time_all (secs) min",
+        "anndata_h5ad_lz4_read_time_all (secs) max",
     ),
     "AnnData (Zarr)": (
         "anndata_zarr_read_time_all (secs) mean",
         "anndata_zarr_read_time_all (secs) min",
         "anndata_zarr_read_time_all (secs) max",
     ),
-    "Parquet": (
-        "parquet_read_time_all (secs) mean",
-        "parquet_read_time_all (secs) min",
-        "parquet_read_time_all (secs) max",
+    "Parquet (uncompressed)": (
+        "parquet_noc_read_time_all (secs) mean",
+        "parquet_noc_read_time_all (secs) min",
+        "parquet_noc_read_time_all (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_read_time_all (secs) mean",
+        "parquet_snappy_read_time_all (secs) min",
+        "parquet_snappy_read_time_all (secs) max",
+    ),
+    "Parquet (GZIP)": (
+        "parquet_gzip_read_time_all (secs) mean",
+        "parquet_gzip_read_time_all (secs) min",
+        "parquet_gzip_read_time_all (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_read_time_all (secs) mean",
+        "parquet_zstd_read_time_all (secs) min",
+        "parquet_zstd_read_time_all (secs) max",
+    ),
+    "Parquet (LZ4)": (
+        "parquet_lz4_read_time_all (secs) mean",
+        "parquet_lz4_read_time_all (secs) min",
+        "parquet_lz4_read_time_all (secs) max",
     ),
 }
 
@@ -477,53 +756,142 @@ for fmt, (mcol, mincol, maxcol) in cols.items():
 
 stats = pd.concat(parts, ignore_index=True)
 
-y_order = result[key].iloc[::-1].tolist()
+x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
+pos = {k: i for i, k in enumerate(x_order)}  # category → position index
 
-fig = px.bar(
-    stats.sort_values(by="format"),
-    x="mean",
-    y=key,
+# 2) give each row its x position and sort per-trace
+stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+fig = px.line(
+    stats,  # already trace-sorted by xpos
+    x=key,
+    y="mean",
     color="format",
-    error_x="err_plus",
-    error_x_minus="err_minus",
-    orientation="h",
-    barmode="group",
-    category_orders={key: y_order},
+    error_y="err_plus",
+    error_y_minus="err_minus",
+    markers=True,
+    category_orders={key: x_order},  # sets axis order & legend hover categories
     labels={key: "Data Shape", "mean": "Seconds"},
     width=1300,
+    log_y=True,
 )
-fig.update_layout(
-    legend_title_text="File Read Duration",
-    legend=dict(x=0.68, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
-    font=dict(size=18),
+fig.update_traces(mode="lines+markers")
+fig.update_traces(marker_color=None, line_color=None).update_layout(
+    colorway=px.colors.qualitative.Dark24
 )
+
 
 pio.write_image(fig, file_read_time_all_image)
 Image(url=file_read_time_all_image)
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
 # read time barchart (one column)
-fig = px.line(
-    df_results,
-    y=[
-        "csv_read_time_one (secs)",
-        "sqlite_read_time_one (secs)",
-        "parquet_read_time_one (secs)",
-    ],
-    x="dataframe_shape (rows, cols)",
-    labels={"dataframe_shape (rows, cols)": "Data Shape", "value": "Seconds"},
-    width=1300,
-    color_discrete_sequence=px.colors.qualitative.D3,
-)
-fig.update_layout(
-    legend_title_text="File Read Duration (one column)",
-    legend=dict(x=0.01, y=0.98, bgcolor="rgba(255,255,255,0.8)"),
-    font=dict(
-        size=20,  # global font size
+
+key = "dataframe_shape (rows, cols)"
+
+cols = {
+    "CSV (GZIP)": (
+        "csv_read_time_one (secs) mean",
+        "csv_read_time_one (secs) min",
+        "csv_read_time_one (secs) max",
     ),
+    "SQLite": (
+        "sqlite_read_time_one (secs) mean",
+        "sqlite_read_time_one (secs) min",
+        "sqlite_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_read_time_one (secs) mean",
+        "anndata_h5ad_noc_read_time_one (secs) min",
+        "anndata_h5ad_noc_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - GZIP)": (
+        "anndata_h5ad_gzip_read_time_one (secs) mean",
+        "anndata_h5ad_gzip_read_time_one (secs) min",
+        "anndata_h5ad_gzip_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_read_time_one (secs) mean",
+        "anndata_h5ad_zstd_read_time_one (secs) min",
+        "anndata_h5ad_zstd_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - LZ4) (": (
+        "anndata_h5ad_lz4_read_time_one (secs) mean",
+        "anndata_h5ad_lz4_read_time_one (secs) min",
+        "anndata_h5ad_lz4_read_time_one (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_read_time_one (secs) mean",
+        "anndata_zarr_read_time_one (secs) min",
+        "anndata_zarr_read_time_one (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_read_time_one (secs) mean",
+        "parquet_noc_read_time_one (secs) min",
+        "parquet_noc_read_time_one (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_read_time_one (secs) mean",
+        "parquet_snappy_read_time_one (secs) min",
+        "parquet_snappy_read_time_one (secs) max",
+    ),
+    "Parquet (GZIP)": (
+        "parquet_gzip_read_time_one (secs) mean",
+        "parquet_gzip_read_time_one (secs) min",
+        "parquet_gzip_read_time_one (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_read_time_one (secs) mean",
+        "parquet_zstd_read_time_one (secs) min",
+        "parquet_zstd_read_time_one (secs) max",
+    ),
+    "Parquet (LZ4)": (
+        "parquet_lz4_read_time_one (secs) mean",
+        "parquet_lz4_read_time_one (secs) min",
+        "parquet_lz4_read_time_one (secs) max",
+    ),
+}
+
+
+parts = []
+for fmt, (mcol, mincol, maxcol) in cols.items():
+    tmp = result[[key, mcol, mincol, maxcol]].copy()
+    tmp["format"] = fmt
+    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
+    tmp["err_plus"] = tmp["max"] - tmp["mean"]
+    tmp["err_minus"] = tmp["mean"] - tmp["min"]
+    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
+
+
+stats = pd.concat(parts, ignore_index=True)
+
+x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
+pos = {k: i for i, k in enumerate(x_order)}  # category → position index
+
+# 2) give each row its x position and sort per-trace
+stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+fig = px.line(
+    stats,  # already trace-sorted by xpos
+    x=key,
+    y="mean",
+    color="format",
+    error_y="err_plus",
+    error_y_minus="err_minus",
+    markers=True,
+    category_orders={key: x_order},  # sets axis order & legend hover categories
+    labels={key: "Data Shape", "mean": "Seconds (log)"},
+    width=1300,
+    log_y=True,
 )
-fig.update_xaxes(range=[0, 2.13])
 fig.update_traces(mode="lines+markers")
+fig.update_traces(marker_color=None, line_color=None).update_layout(
+    colorway=px.colors.qualitative.Dark24
+)
+
 
 pio.write_image(fig, file_read_time_one_image)
 Image(url=file_read_time_one_image)
+# -
+
+
