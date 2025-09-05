@@ -596,7 +596,7 @@ cols = {
         "anndata_h5ad_zstd_write_time (secs) min",
         "anndata_h5ad_zstd_write_time (secs) max",
     ),
-    "AnnData (H5AD - LZ4) (": (
+    "AnnData (H5AD - LZ4)": (
         "anndata_h5ad_lz4_write_time (secs) mean",
         "anndata_h5ad_lz4_write_time (secs) min",
         "anndata_h5ad_lz4_write_time (secs) max",
@@ -775,7 +775,7 @@ cols = {
         "anndata_h5ad_zstd_read_time_all (secs) min",
         "anndata_h5ad_zstd_read_time_all (secs) max",
     ),
-    "AnnData (H5AD - LZ4) (": (
+    "AnnData (H5AD - LZ4)": (
         "anndata_h5ad_lz4_read_time_all (secs) mean",
         "anndata_h5ad_lz4_read_time_all (secs) min",
         "anndata_h5ad_lz4_read_time_all (secs) max",
@@ -885,7 +885,7 @@ cols = {
         "anndata_h5ad_zstd_read_time_one (secs) min",
         "anndata_h5ad_zstd_read_time_one (secs) max",
     ),
-    "AnnData (H5AD - LZ4) (": (
+    "AnnData (H5AD - LZ4)": (
         "anndata_h5ad_lz4_read_time_one (secs) mean",
         "anndata_h5ad_lz4_read_time_one (secs) min",
         "anndata_h5ad_lz4_read_time_one (secs) max",
@@ -996,7 +996,7 @@ cols = {
         "anndata_h5ad_zstd_write_and_read_time (secs) min",
         "anndata_h5ad_zstd_write_and_read_time (secs) max",
     ),
-    "AnnData (H5AD - LZ4) (": (
+    "AnnData (H5AD - LZ4)": (
         "anndata_h5ad_lz4_write_and_read_time (secs) mean",
         "anndata_h5ad_lz4_write_and_read_time (secs) min",
         "anndata_h5ad_lz4_write_and_read_time (secs) max",
