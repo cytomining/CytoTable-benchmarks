@@ -68,6 +68,9 @@ file_read_time_all_image = (
 file_read_time_one_image = (
     f"{image_dir}/parquet-comparisons-file-read-time-one-column.png"
 )
+file_read_time_write_and_read_time_image = (
+    f"{image_dir}/parquet-comparisons-file-write-and-read-time.png"
+)
 
 
 def remove_files():
@@ -1070,8 +1073,5 @@ fig.update_traces(marker_color=None, line_color=None).update_layout(
 fig.update_layout(legend_title_text="Format")
 
 
-pio.write_image(fig, file_read_time_one_image)
-Image(url=file_read_time_one_image)
-# -
-
-
+pio.write_image(fig, file_read_time_write_and_read_time_image)
+Image(url=file_read_time_write_and_read_time_image)
