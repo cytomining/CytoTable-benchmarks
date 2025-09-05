@@ -226,7 +226,7 @@ results = []
 
 # loop for iterating over increasingly large dataframes
 # and gathering data about operations on them
-for _ in range(1, 7):
+for _ in range(1, 6):
     # increase the size of the dataframe
     nrows *= 2
     ncols *= 2
@@ -605,11 +605,13 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds (log)"},
     width=1300,
     log_y=True,
+    title="File format write time duration (seconds)"
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
     colorway=px.colors.qualitative.Dark24
 )
+fig.update_layout(legend_title_text="Format")
 
 
 pio.write_image(fig, file_write_time_image)
@@ -660,19 +662,25 @@ fig = px.line(
     category_orders={key: x_order},
     labels={key: "Data Shape", "bytes": "Bytes"},
     width=1300,
+    title="File format size (bytes)"
 )
 
 fig.update_traces(mode="lines+markers")
-fig.update_layout(
-    legend_title_text="File Size",
-    legend=dict(x=0.72, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
-    font=dict(size=18),
-)
 fig.update_xaxes(autorange="reversed")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
     colorway=px.colors.qualitative.Dark24
 )
-
+fig.update_layout(
+    legend=dict(
+        x=1.02,
+        y=1,  # just outside the plotting area
+        xanchor="left",
+        yanchor="top",
+        bgcolor="rgba(255,255,255,0.8)",
+    ),
+    margin=dict(r=220),  # add right margin so legend fits
+    font=dict(size=18),
+)
 
 pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
@@ -774,11 +782,13 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds"},
     width=1300,
     log_y=True,
+    title="File format read time duration (full dataset) (seconds)"
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
     colorway=px.colors.qualitative.Dark24
 )
+fig.update_layout(legend_title_text="Format")
 
 
 pio.write_image(fig, file_read_time_all_image)
@@ -883,11 +893,13 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds (log)"},
     width=1300,
     log_y=True,
+    title="File format read time duration (one column) (seconds)"
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
     colorway=px.colors.qualitative.Dark24
 )
+fig.update_layout(legend_title_text="Format")
 
 
 pio.write_image(fig, file_read_time_one_image)
