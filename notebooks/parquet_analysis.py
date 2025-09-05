@@ -477,7 +477,60 @@ for _ in range(1, 6):
 df_results = pd.DataFrame(results)
 df_results
 
+# +
+# calculate full write + read time for each format
+df_results["csv_write_and_read_time (secs)"] = (
+    df_results["csv_write_time (secs)"] + df_results["csv_read_time_all (secs)"]
+)
+df_results["sqlite_write_and_read_time (secs)"] = (
+    df_results["sqlite_write_time (secs)"] + df_results["sqlite_read_time_all (secs)"]
+)
+
+df_results["anndata_h5ad_noc_write_and_read_time (secs)"] = (
+    df_results["anndata_h5ad_noc_write_time (secs)"]
+    + df_results["anndata_h5ad_noc_read_time_all (secs)"]
+)
+df_results["anndata_h5ad_gzip_write_and_read_time (secs)"] = (
+    df_results["anndata_h5ad_gzip_write_time (secs)"]
+    + df_results["anndata_h5ad_gzip_read_time_all (secs)"]
+)
+df_results["anndata_h5ad_lz4_write_and_read_time (secs)"] = (
+    df_results["anndata_h5ad_lz4_write_time (secs)"]
+    + df_results["anndata_h5ad_lz4_read_time_all (secs)"]
+)
+
+df_results["anndata_h5ad_zstd_write_and_read_time (secs)"] = (
+    df_results["anndata_h5ad_zstd_write_time (secs)"]
+    + df_results["anndata_h5ad_zstd_read_time_all (secs)"]
+)
+df_results["anndata_zarr_write_and_read_time (secs)"] = (
+    df_results["anndata_zarr_write_time (secs)"]
+    + df_results["anndata_zarr_read_time_all (secs)"]
+)
+
+df_results["parquet_noc_write_and_read_time (secs)"] = (
+    df_results["parquet_noc_write_time (secs)"]
+    + df_results["parquet_noc_read_time_all (secs)"]
+)
+df_results["parquet_snappy_write_and_read_time (secs)"] = (
+    df_results["parquet_snappy_write_time (secs)"]
+    + df_results["parquet_snappy_read_time_all (secs)"]
+)
+df_results["parquet_gzip_write_and_read_time (secs)"] = (
+    df_results["parquet_gzip_write_time (secs)"]
+    + df_results["parquet_gzip_read_time_all (secs)"]
+)
+df_results["parquet_zstd_write_and_read_time (secs)"] = (
+    df_results["parquet_zstd_write_time (secs)"]
+    + df_results["parquet_zstd_read_time_all (secs)"]
+)
+df_results["parquet_lz4_write_and_read_time (secs)"] = (
+    df_results["parquet_lz4_write_time (secs)"]
+    + df_results["parquet_lz4_read_time_all (secs)"]
+)
+
 # + papermill={"duration": 0.048407, "end_time": "2025-09-03T21:57:20.305775", "exception": false, "start_time": "2025-09-03T21:57:20.257368", "status": "completed"}
+# gather average, min, and max for error bar implementation
 average = (
     df_results.groupby("dataframe_shape (rows, cols)")
     .mean()
@@ -510,6 +563,8 @@ result = (
 result
 
 # + papermill={"duration": 1.365292, "end_time": "2025-09-03T21:57:21.680374", "exception": false, "start_time": "2025-09-03T21:57:20.315082", "status": "completed"}
+# write time plot
+
 key = "dataframe_shape (rows, cols)"
 
 cols = {
@@ -605,7 +660,7 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds (log)"},
     width=1300,
     log_y=True,
-    title="File format write time duration (seconds)"
+    title="File format write time duration (seconds)",
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
@@ -618,6 +673,8 @@ pio.write_image(fig, file_write_time_image)
 Image(url=file_write_time_image)
 
 # + papermill={"duration": 0.313924, "end_time": "2025-09-03T21:57:22.005171", "exception": false, "start_time": "2025-09-03T21:57:21.691247", "status": "completed"}
+# file size plot
+
 key = "dataframe_shape (rows, cols)"
 
 size_cols = {
@@ -662,7 +719,7 @@ fig = px.line(
     category_orders={key: x_order},
     labels={key: "Data Shape", "bytes": "Bytes"},
     width=1300,
-    title="File format size (bytes)"
+    title="File format size (bytes)",
 )
 
 fig.update_traces(mode="lines+markers")
@@ -686,7 +743,7 @@ pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
 
 # + papermill={"duration": 0.250629, "end_time": "2025-09-03T21:57:22.266295", "exception": false, "start_time": "2025-09-03T21:57:22.015666", "status": "completed"}
-# read time barchart (all columns)
+# read time plot (all columns)
 key = "dataframe_shape (rows, cols)"
 
 cols = {
@@ -782,7 +839,7 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds"},
     width=1300,
     log_y=True,
-    title="File format read time duration (full dataset) (seconds)"
+    title="File format read time duration (full dataset) (seconds)",
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
@@ -795,7 +852,7 @@ pio.write_image(fig, file_read_time_all_image)
 Image(url=file_read_time_all_image)
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
-# read time barchart (one column)
+# read time plot (one column)
 
 key = "dataframe_shape (rows, cols)"
 
@@ -893,7 +950,118 @@ fig = px.line(
     labels={key: "Data Shape", "mean": "Seconds (log)"},
     width=1300,
     log_y=True,
-    title="File format read time duration (one column) (seconds)"
+    title="File format read time duration (one column) (seconds)",
+)
+fig.update_traces(mode="lines+markers")
+fig.update_traces(marker_color=None, line_color=None).update_layout(
+    colorway=px.colors.qualitative.Dark24
+)
+fig.update_layout(legend_title_text="Format")
+
+
+pio.write_image(fig, file_read_time_one_image)
+Image(url=file_read_time_one_image)
+
+# +
+# write and read time plot (combined times from write and read all)
+
+key = "dataframe_shape (rows, cols)"
+
+cols = {
+    "CSV (GZIP)": (
+        "csv_write_and_read_time (secs) mean",
+        "csv_write_and_read_time (secs) min",
+        "csv_write_and_read_time (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_write_and_read_time (secs) mean",
+        "sqlite_write_and_read_time (secs) min",
+        "sqlite_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_write_and_read_time (secs) mean",
+        "anndata_h5ad_noc_write_and_read_time (secs) min",
+        "anndata_h5ad_noc_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - GZIP)": (
+        "anndata_h5ad_gzip_write_and_read_time (secs) mean",
+        "anndata_h5ad_gzip_write_and_read_time (secs) min",
+        "anndata_h5ad_gzip_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_write_and_read_time (secs) mean",
+        "anndata_h5ad_zstd_write_and_read_time (secs) min",
+        "anndata_h5ad_zstd_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - LZ4) (": (
+        "anndata_h5ad_lz4_write_and_read_time (secs) mean",
+        "anndata_h5ad_lz4_write_and_read_time (secs) min",
+        "anndata_h5ad_lz4_write_and_read_time (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_write_and_read_time (secs) mean",
+        "anndata_zarr_write_and_read_time (secs) min",
+        "anndata_zarr_write_and_read_time (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_write_and_read_time (secs) mean",
+        "parquet_noc_write_and_read_time (secs) min",
+        "parquet_noc_write_and_read_time (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_write_and_read_time (secs) mean",
+        "parquet_snappy_write_and_read_time (secs) min",
+        "parquet_snappy_write_and_read_time (secs) max",
+    ),
+    "Parquet (GZIP)": (
+        "parquet_gzip_write_and_read_time (secs) mean",
+        "parquet_gzip_write_and_read_time (secs) min",
+        "parquet_gzip_write_and_read_time (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_write_and_read_time (secs) mean",
+        "parquet_zstd_write_and_read_time (secs) min",
+        "parquet_zstd_write_and_read_time (secs) max",
+    ),
+    "Parquet (LZ4)": (
+        "parquet_lz4_write_and_read_time (secs) mean",
+        "parquet_lz4_write_and_read_time (secs) min",
+        "parquet_lz4_write_and_read_time (secs) max",
+    ),
+}
+
+
+parts = []
+for fmt, (mcol, mincol, maxcol) in cols.items():
+    tmp = result[[key, mcol, mincol, maxcol]].copy()
+    tmp["format"] = fmt
+    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
+    tmp["err_plus"] = tmp["max"] - tmp["mean"]
+    tmp["err_minus"] = tmp["mean"] - tmp["min"]
+    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
+
+
+stats = pd.concat(parts, ignore_index=True)
+
+x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
+pos = {k: i for i, k in enumerate(x_order)}  # category → position index
+
+# 2) give each row its x position and sort per-trace
+stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+fig = px.line(
+    stats,  # already trace-sorted by xpos
+    x=key,
+    y="mean",
+    color="format",
+    error_y="err_plus",
+    error_y_minus="err_minus",
+    markers=True,
+    category_orders={key: x_order},  # sets axis order & legend hover categories
+    labels={key: "Data Shape", "mean": "Seconds (log)"},
+    width=1300,
+    log_y=True,
+    title="File format write and read time (full dataset) (seconds)",
 )
 fig.update_traces(mode="lines+markers")
 fig.update_traces(marker_color=None, line_color=None).update_layout(
