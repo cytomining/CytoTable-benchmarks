@@ -233,7 +233,7 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
     
     # loop for iterating over increasingly large dataframes
     # and gathering data about operations on them
-    for _ in range(1, 3):
+    for _ in range(1, 6):
         # increase the size of the dataframe
         nrows *= 2
         ncols *= 2
