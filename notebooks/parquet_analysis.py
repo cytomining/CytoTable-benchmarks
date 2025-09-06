@@ -220,317 +220,328 @@ for filename in [csv_name, parquet_gzip_name, sqlite_name]:
     pathlib.Path(filename).unlink(missing_ok=True)
 
 # + papermill={"duration": 126.463193, "end_time": "2025-09-03T21:57:20.248198", "exception": false, "start_time": "2025-09-03T21:55:13.785005", "status": "completed"}
-# starting rowcount and col count
-nrows = 320
-ncols = 124
+# capture primary data metrics on file format performance
 
-# result list for storing data
-results = []
-
-# loop for iterating over increasingly large dataframes
-# and gathering data about operations on them
-for _ in range(1, 6):
-    # increase the size of the dataframe
-    nrows *= 2
-    ncols *= 2
-
-    # form a dataframe using randomized data
-    df = pd.DataFrame(
-        np.random.rand(nrows, ncols), columns=[f"col_{num}" for num in range(0, ncols)]
-    )
-
-    # add some string data
-    alphabet = np.array(list(string.ascii_lowercase + string.digits))
-    df = df.assign(
-        **{
-            f"str_{i+1}": [
-                "".join(np.random.default_rng(10).choice(alphabet, 10))
-                for _ in range(len(df))
-            ]
-            for i in range(10)
-        }
-    )
-
-    print(df.shape)
-
-    # run multiple times for error and average
-    for _ in range(1, 5):
-        # remove any existing files in preparation for next steps
-        remove_files()
-        # append data to the result list
-        results.append(
-            {
-                # general information about the dataframe
-                "dataframe_shape (rows, cols)": str(df.shape),
-                # information about CSV (uncompressed)
-                "csv_write_time (secs)": timer(
-                    df.to_csv, path_or_buf=csv_name, compression="gzip"
-                ),
-                "csv_size (bytes)": os.stat(csv_name).st_size,
-                "csv_read_time_all (secs)": timer(
-                    pd.read_csv, filepath_or_buffer=csv_name, compression="gzip"
-                ),
-                "csv_read_time_one (secs)": timer(
-                    pd.read_csv,
-                    filepath_or_buffer=csv_name,
-                    compression="gzip",
-                    usecols=["col_2"],
-                ),
-                # information about SQLite
-                "sqlite_write_time (secs)": (
-                    timer(
-                        df.to_sql,
-                        name=sqlite_tbl_name,
-                        con=f"sqlite:///{sqlite_name}",
-                    )
-                    if ncols < 2000
-                    else None
-                ),
-                "sqlite_size (bytes)": (
-                    os.stat(sqlite_name).st_size if ncols < 2000 else None
-                ),
-                "sqlite_read_time_all (secs)": (
-                    timer(
-                        pd.read_sql,
-                        sql=f"SELECT * FROM {sqlite_tbl_name}",
-                        con=f"sqlite:///{sqlite_name}",
-                    )
-                    if ncols < 2000
-                    else None
-                ),
-                "sqlite_read_time_one (secs)": (
-                    timer(
-                        pd.read_sql,
-                        sql=f"SELECT col_2 FROM {sqlite_tbl_name}",
-                        con=f"sqlite:///{sqlite_name}",
-                    )
-                    if ncols < 2000
-                    else None
-                ),
-                # information about anndata h5ad (no compression)
-                "anndata_h5ad_noc_write_time (secs)": timer(
-                    write_anndata,
-                    df=df,
-                    write_to="h5ad",
-                    compression="none",
-                    dest_path=anndata_h5_noc_name,
-                ),
-                "anndata_h5ad_noc_size (bytes)": os.stat(anndata_h5_noc_name).st_size,
-                "anndata_h5ad_noc_read_time_all (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_noc_name,
-                    read_from="h5ad",
-                    read_one=False,
-                ),
-                "anndata_h5ad_noc_read_time_one (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_noc_name,
-                    read_from="h5ad",
-                    read_one=True,
-                ),
-                # information about anndata h5ad (gzip)
-                "anndata_h5ad_gzip_write_time (secs)": timer(
-                    write_anndata,
-                    df=df,
-                    write_to="h5ad",
-                    compression="gzip",
-                    dest_path=anndata_h5_gzip_name,
-                ),
-                "anndata_h5ad_gzip_size (bytes)": os.stat(anndata_h5_gzip_name).st_size,
-                "anndata_h5ad_gzip_read_time_all (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_gzip_name,
-                    read_from="h5ad",
-                    read_one=False,
-                ),
-                "anndata_h5ad_gzip_read_time_one (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_gzip_name,
-                    read_from="h5ad",
-                    read_one=True,
-                ),
-                # information about anndata h5ad (lz4)
-                "anndata_h5ad_lz4_write_time (secs)": timer(
-                    write_anndata,
-                    df=df,
-                    write_to="h5ad",
-                    compression="lz4",
-                    dest_path=anndata_h5_lz4_name,
-                ),
-                "anndata_h5ad_lz4_size (bytes)": os.stat(anndata_h5_lz4_name).st_size,
-                "anndata_h5ad_lz4_read_time_all (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_lz4_name,
-                    read_from="h5ad",
-                    read_one=False,
-                ),
-                "anndata_h5ad_lz4_read_time_one (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_lz4_name,
-                    read_from="h5ad",
-                    read_one=True,
-                ),
-                # information about anndata h5ad (zstd)
-                "anndata_h5ad_zstd_write_time (secs)": timer(
-                    write_anndata,
-                    df=df,
-                    write_to="h5ad",
-                    compression="zstd",
-                    dest_path=anndata_h5_zstd_name,
-                ),
-                "anndata_h5ad_zstd_size (bytes)": os.stat(anndata_h5_zstd_name).st_size,
-                "anndata_h5ad_zstd_read_time_all (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_zstd_name,
-                    read_from="h5ad",
-                    read_one=False,
-                ),
-                "anndata_h5ad_zstd_read_time_one (secs)": timer(
-                    read_anndata,
-                    path=anndata_h5_zstd_name,
-                    read_from="h5ad",
-                    read_one=True,
-                ),
-                # information about anndata zarr
-                "anndata_zarr_write_time (secs)": timer(
-                    write_anndata,
-                    df=df,
-                    write_to="zarr",
-                    compression="none",
-                    dest_path=anndata_zarr_name,
-                ),
-                # note: we use a comprehension below to recurse through
-                # the zarr directory for a true estimate of size.
-                "anndata_zarr_size (bytes)": sum(
-                    f.stat().st_size
-                    for f in pathlib.Path(anndata_zarr_name).rglob("**/*")
-                    if f.is_file()
-                ),
-                "anndata_zarr_read_time_all (secs)": timer(
-                    read_anndata,
-                    path=anndata_zarr_name,
-                    read_from="zarr",
-                    read_one=False,
-                ),
-                "anndata_zarr_read_time_one (secs)": timer(
-                    read_anndata,
-                    path=anndata_zarr_name,
-                    read_from="zarr",
-                    read_one=True,
-                ),
-                # information about Parquet with no compression
-                "parquet_noc_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_noc_name, compression=None
-                ),
-                "parquet_noc_size (bytes)": os.stat(parquet_noc_name).st_size,
-                "parquet_noc_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_noc_name
-                ),
-                "parquet_noc_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_noc_name, columns=["col_2"]
-                ),
-                # information about Parquet with snappy compression
-                "parquet_snappy_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_snappy_name, compression="snappy"
-                ),
-                "parquet_snappy_size (bytes)": os.stat(parquet_snappy_name).st_size,
-                "parquet_snappy_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_snappy_name
-                ),
-                "parquet_snappy_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_snappy_name, columns=["col_2"]
-                ),
-                # information about Parquet with gzip compression
-                "parquet_gzip_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_gzip_name, compression="gzip"
-                ),
-                "parquet_gzip_size (bytes)": os.stat(parquet_gzip_name).st_size,
-                "parquet_gzip_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_gzip_name
-                ),
-                "parquet_gzip_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_gzip_name, columns=["col_2"]
-                ),
-                # information about Parquet with zstd compression
-                "parquet_zstd_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_zstd_name, compression="zstd"
-                ),
-                "parquet_zstd_size (bytes)": os.stat(parquet_zstd_name).st_size,
-                "parquet_zstd_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_zstd_name
-                ),
-                "parquet_zstd_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_zstd_name, columns=["col_2"]
-                ),
-                # information about Parquet with lz4 compression
-                "parquet_lz4_write_time (secs)": timer(
-                    df.to_parquet, path=parquet_lz4_name, compression="lz4"
-                ),
-                "parquet_lz4_size (bytes)": os.stat(parquet_lz4_name).st_size,
-                "parquet_lz4_read_time_all (secs)": timer(
-                    pd.read_parquet, path=parquet_lz4_name
-                ),
-                "parquet_lz4_read_time_one (secs)": timer(
-                    pd.read_parquet, path=parquet_lz4_name, columns=["col_2"]
-                ),
+# avoid a rewrite of the data if we already have it
+if not pathlib.Path("parquet_analysis.parquet").is_file():
+    # starting rowcount and col count
+    nrows = 320
+    ncols = 124
+    
+    # result list for storing data
+    results = []
+    
+    # loop for iterating over increasingly large dataframes
+    # and gathering data about operations on them
+    for _ in range(1, 3):
+        # increase the size of the dataframe
+        nrows *= 2
+        ncols *= 2
+    
+        # form a dataframe using randomized data
+        df = pd.DataFrame(
+            np.random.rand(nrows, ncols), columns=[f"col_{num}" for num in range(0, ncols)]
+        )
+    
+        # add some string data
+        alphabet = np.array(list(string.ascii_lowercase + string.digits))
+        df = df.assign(
+            **{
+                f"str_{i+1}": [
+                    "".join(np.random.default_rng(10).choice(alphabet, 10))
+                    for _ in range(len(df))
+                ]
+                for i in range(10)
             }
         )
-
-
-df_results = pd.DataFrame(results)
+    
+        print(df.shape)
+    
+        # run multiple times for error and average
+        for _ in range(1, 5):
+            # remove any existing files in preparation for next steps
+            remove_files()
+            # append data to the result list
+            results.append(
+                {
+                    # general information about the dataframe
+                    "dataframe_shape (rows, cols)": str(df.shape),
+                    # information about CSV (uncompressed)
+                    "csv_write_time (secs)": timer(
+                        df.to_csv, path_or_buf=csv_name, compression="gzip"
+                    ),
+                    "csv_size (bytes)": os.stat(csv_name).st_size,
+                    "csv_read_time_all (secs)": timer(
+                        pd.read_csv, filepath_or_buffer=csv_name, compression="gzip"
+                    ),
+                    "csv_read_time_one (secs)": timer(
+                        pd.read_csv,
+                        filepath_or_buffer=csv_name,
+                        compression="gzip",
+                        usecols=["col_2"],
+                    ),
+                    # information about SQLite
+                    "sqlite_write_time (secs)": (
+                        timer(
+                            df.to_sql,
+                            name=sqlite_tbl_name,
+                            con=f"sqlite:///{sqlite_name}",
+                        )
+                        if ncols < 2000
+                        else None
+                    ),
+                    "sqlite_size (bytes)": (
+                        os.stat(sqlite_name).st_size if ncols < 2000 else None
+                    ),
+                    "sqlite_read_time_all (secs)": (
+                        timer(
+                            pd.read_sql,
+                            sql=f"SELECT * FROM {sqlite_tbl_name}",
+                            con=f"sqlite:///{sqlite_name}",
+                        )
+                        if ncols < 2000
+                        else None
+                    ),
+                    "sqlite_read_time_one (secs)": (
+                        timer(
+                            pd.read_sql,
+                            sql=f"SELECT col_2 FROM {sqlite_tbl_name}",
+                            con=f"sqlite:///{sqlite_name}",
+                        )
+                        if ncols < 2000
+                        else None
+                    ),
+                    # information about anndata h5ad (no compression)
+                    "anndata_h5ad_noc_write_time (secs)": timer(
+                        write_anndata,
+                        df=df,
+                        write_to="h5ad",
+                        compression="none",
+                        dest_path=anndata_h5_noc_name,
+                    ),
+                    "anndata_h5ad_noc_size (bytes)": os.stat(anndata_h5_noc_name).st_size,
+                    "anndata_h5ad_noc_read_time_all (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_noc_name,
+                        read_from="h5ad",
+                        read_one=False,
+                    ),
+                    "anndata_h5ad_noc_read_time_one (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_noc_name,
+                        read_from="h5ad",
+                        read_one=True,
+                    ),
+                    # information about anndata h5ad (gzip)
+                    "anndata_h5ad_gzip_write_time (secs)": timer(
+                        write_anndata,
+                        df=df,
+                        write_to="h5ad",
+                        compression="gzip",
+                        dest_path=anndata_h5_gzip_name,
+                    ),
+                    "anndata_h5ad_gzip_size (bytes)": os.stat(anndata_h5_gzip_name).st_size,
+                    "anndata_h5ad_gzip_read_time_all (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_gzip_name,
+                        read_from="h5ad",
+                        read_one=False,
+                    ),
+                    "anndata_h5ad_gzip_read_time_one (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_gzip_name,
+                        read_from="h5ad",
+                        read_one=True,
+                    ),
+                    # information about anndata h5ad (lz4)
+                    "anndata_h5ad_lz4_write_time (secs)": timer(
+                        write_anndata,
+                        df=df,
+                        write_to="h5ad",
+                        compression="lz4",
+                        dest_path=anndata_h5_lz4_name,
+                    ),
+                    "anndata_h5ad_lz4_size (bytes)": os.stat(anndata_h5_lz4_name).st_size,
+                    "anndata_h5ad_lz4_read_time_all (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_lz4_name,
+                        read_from="h5ad",
+                        read_one=False,
+                    ),
+                    "anndata_h5ad_lz4_read_time_one (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_lz4_name,
+                        read_from="h5ad",
+                        read_one=True,
+                    ),
+                    # information about anndata h5ad (zstd)
+                    "anndata_h5ad_zstd_write_time (secs)": timer(
+                        write_anndata,
+                        df=df,
+                        write_to="h5ad",
+                        compression="zstd",
+                        dest_path=anndata_h5_zstd_name,
+                    ),
+                    "anndata_h5ad_zstd_size (bytes)": os.stat(anndata_h5_zstd_name).st_size,
+                    "anndata_h5ad_zstd_read_time_all (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_zstd_name,
+                        read_from="h5ad",
+                        read_one=False,
+                    ),
+                    "anndata_h5ad_zstd_read_time_one (secs)": timer(
+                        read_anndata,
+                        path=anndata_h5_zstd_name,
+                        read_from="h5ad",
+                        read_one=True,
+                    ),
+                    # information about anndata zarr
+                    "anndata_zarr_write_time (secs)": timer(
+                        write_anndata,
+                        df=df,
+                        write_to="zarr",
+                        compression="none",
+                        dest_path=anndata_zarr_name,
+                    ),
+                    # note: we use a comprehension below to recurse through
+                    # the zarr directory for a true estimate of size.
+                    "anndata_zarr_size (bytes)": sum(
+                        f.stat().st_size
+                        for f in pathlib.Path(anndata_zarr_name).rglob("**/*")
+                        if f.is_file()
+                    ),
+                    "anndata_zarr_read_time_all (secs)": timer(
+                        read_anndata,
+                        path=anndata_zarr_name,
+                        read_from="zarr",
+                        read_one=False,
+                    ),
+                    "anndata_zarr_read_time_one (secs)": timer(
+                        read_anndata,
+                        path=anndata_zarr_name,
+                        read_from="zarr",
+                        read_one=True,
+                    ),
+                    # information about Parquet with no compression
+                    "parquet_noc_write_time (secs)": timer(
+                        df.to_parquet, path=parquet_noc_name, compression=None
+                    ),
+                    "parquet_noc_size (bytes)": os.stat(parquet_noc_name).st_size,
+                    "parquet_noc_read_time_all (secs)": timer(
+                        pd.read_parquet, path=parquet_noc_name
+                    ),
+                    "parquet_noc_read_time_one (secs)": timer(
+                        pd.read_parquet, path=parquet_noc_name, columns=["col_2"]
+                    ),
+                    # information about Parquet with snappy compression
+                    "parquet_snappy_write_time (secs)": timer(
+                        df.to_parquet, path=parquet_snappy_name, compression="snappy"
+                    ),
+                    "parquet_snappy_size (bytes)": os.stat(parquet_snappy_name).st_size,
+                    "parquet_snappy_read_time_all (secs)": timer(
+                        pd.read_parquet, path=parquet_snappy_name
+                    ),
+                    "parquet_snappy_read_time_one (secs)": timer(
+                        pd.read_parquet, path=parquet_snappy_name, columns=["col_2"]
+                    ),
+                    # information about Parquet with gzip compression
+                    "parquet_gzip_write_time (secs)": timer(
+                        df.to_parquet, path=parquet_gzip_name, compression="gzip"
+                    ),
+                    "parquet_gzip_size (bytes)": os.stat(parquet_gzip_name).st_size,
+                    "parquet_gzip_read_time_all (secs)": timer(
+                        pd.read_parquet, path=parquet_gzip_name
+                    ),
+                    "parquet_gzip_read_time_one (secs)": timer(
+                        pd.read_parquet, path=parquet_gzip_name, columns=["col_2"]
+                    ),
+                    # information about Parquet with zstd compression
+                    "parquet_zstd_write_time (secs)": timer(
+                        df.to_parquet, path=parquet_zstd_name, compression="zstd"
+                    ),
+                    "parquet_zstd_size (bytes)": os.stat(parquet_zstd_name).st_size,
+                    "parquet_zstd_read_time_all (secs)": timer(
+                        pd.read_parquet, path=parquet_zstd_name
+                    ),
+                    "parquet_zstd_read_time_one (secs)": timer(
+                        pd.read_parquet, path=parquet_zstd_name, columns=["col_2"]
+                    ),
+                    # information about Parquet with lz4 compression
+                    "parquet_lz4_write_time (secs)": timer(
+                        df.to_parquet, path=parquet_lz4_name, compression="lz4"
+                    ),
+                    "parquet_lz4_size (bytes)": os.stat(parquet_lz4_name).st_size,
+                    "parquet_lz4_read_time_all (secs)": timer(
+                        pd.read_parquet, path=parquet_lz4_name
+                    ),
+                    "parquet_lz4_read_time_one (secs)": timer(
+                        pd.read_parquet, path=parquet_lz4_name, columns=["col_2"]
+                    ),
+                }
+            )
+    
+    
+    df_results = pd.DataFrame(results)
+else:
+    df_results = pd.read_parquet("parquet_analysis.parquet")
 df_results
+# -
 
-# +
 # calculate full write + read time for each format
-df_results["csv_write_and_read_time (secs)"] = (
-    df_results["csv_write_time (secs)"] + df_results["csv_read_time_all (secs)"]
-)
-df_results["sqlite_write_and_read_time (secs)"] = (
-    df_results["sqlite_write_time (secs)"] + df_results["sqlite_read_time_all (secs)"]
-)
+if not pathlib.Path("parquet_analysis.parquet").is_file():
+    df_results["csv_write_and_read_time (secs)"] = (
+        df_results["csv_write_time (secs)"] + df_results["csv_read_time_all (secs)"]
+    )
+    df_results["sqlite_write_and_read_time (secs)"] = (
+        df_results["sqlite_write_time (secs)"] + df_results["sqlite_read_time_all (secs)"]
+    )
+    
+    df_results["anndata_h5ad_noc_write_and_read_time (secs)"] = (
+        df_results["anndata_h5ad_noc_write_time (secs)"]
+        + df_results["anndata_h5ad_noc_read_time_all (secs)"]
+    )
+    df_results["anndata_h5ad_gzip_write_and_read_time (secs)"] = (
+        df_results["anndata_h5ad_gzip_write_time (secs)"]
+        + df_results["anndata_h5ad_gzip_read_time_all (secs)"]
+    )
+    df_results["anndata_h5ad_lz4_write_and_read_time (secs)"] = (
+        df_results["anndata_h5ad_lz4_write_time (secs)"]
+        + df_results["anndata_h5ad_lz4_read_time_all (secs)"]
+    )
+    
+    df_results["anndata_h5ad_zstd_write_and_read_time (secs)"] = (
+        df_results["anndata_h5ad_zstd_write_time (secs)"]
+        + df_results["anndata_h5ad_zstd_read_time_all (secs)"]
+    )
+    df_results["anndata_zarr_write_and_read_time (secs)"] = (
+        df_results["anndata_zarr_write_time (secs)"]
+        + df_results["anndata_zarr_read_time_all (secs)"]
+    )
+    
+    df_results["parquet_noc_write_and_read_time (secs)"] = (
+        df_results["parquet_noc_write_time (secs)"]
+        + df_results["parquet_noc_read_time_all (secs)"]
+    )
+    df_results["parquet_snappy_write_and_read_time (secs)"] = (
+        df_results["parquet_snappy_write_time (secs)"]
+        + df_results["parquet_snappy_read_time_all (secs)"]
+    )
+    df_results["parquet_gzip_write_and_read_time (secs)"] = (
+        df_results["parquet_gzip_write_time (secs)"]
+        + df_results["parquet_gzip_read_time_all (secs)"]
+    )
+    df_results["parquet_zstd_write_and_read_time (secs)"] = (
+        df_results["parquet_zstd_write_time (secs)"]
+        + df_results["parquet_zstd_read_time_all (secs)"]
+    )
+    df_results["parquet_lz4_write_and_read_time (secs)"] = (
+        df_results["parquet_lz4_write_time (secs)"]
+        + df_results["parquet_lz4_read_time_all (secs)"]
+    )
 
-df_results["anndata_h5ad_noc_write_and_read_time (secs)"] = (
-    df_results["anndata_h5ad_noc_write_time (secs)"]
-    + df_results["anndata_h5ad_noc_read_time_all (secs)"]
-)
-df_results["anndata_h5ad_gzip_write_and_read_time (secs)"] = (
-    df_results["anndata_h5ad_gzip_write_time (secs)"]
-    + df_results["anndata_h5ad_gzip_read_time_all (secs)"]
-)
-df_results["anndata_h5ad_lz4_write_and_read_time (secs)"] = (
-    df_results["anndata_h5ad_lz4_write_time (secs)"]
-    + df_results["anndata_h5ad_lz4_read_time_all (secs)"]
-)
-
-df_results["anndata_h5ad_zstd_write_and_read_time (secs)"] = (
-    df_results["anndata_h5ad_zstd_write_time (secs)"]
-    + df_results["anndata_h5ad_zstd_read_time_all (secs)"]
-)
-df_results["anndata_zarr_write_and_read_time (secs)"] = (
-    df_results["anndata_zarr_write_time (secs)"]
-    + df_results["anndata_zarr_read_time_all (secs)"]
-)
-
-df_results["parquet_noc_write_and_read_time (secs)"] = (
-    df_results["parquet_noc_write_time (secs)"]
-    + df_results["parquet_noc_read_time_all (secs)"]
-)
-df_results["parquet_snappy_write_and_read_time (secs)"] = (
-    df_results["parquet_snappy_write_time (secs)"]
-    + df_results["parquet_snappy_read_time_all (secs)"]
-)
-df_results["parquet_gzip_write_and_read_time (secs)"] = (
-    df_results["parquet_gzip_write_time (secs)"]
-    + df_results["parquet_gzip_read_time_all (secs)"]
-)
-df_results["parquet_zstd_write_and_read_time (secs)"] = (
-    df_results["parquet_zstd_write_time (secs)"]
-    + df_results["parquet_zstd_read_time_all (secs)"]
-)
-df_results["parquet_lz4_write_and_read_time (secs)"] = (
-    df_results["parquet_lz4_write_time (secs)"]
-    + df_results["parquet_lz4_read_time_all (secs)"]
-)
+# export data to file
+if not pathlib.Path("parquet_analysis.parquet").is_file():
+    df_results.to_parquet("parquet_analysis.parquet")
 
 # + papermill={"duration": 0.048407, "end_time": "2025-09-03T21:57:20.305775", "exception": false, "start_time": "2025-09-03T21:57:20.257368", "status": "completed"}
 # gather average, min, and max for error bar implementation
