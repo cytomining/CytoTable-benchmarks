@@ -24,7 +24,7 @@ import pathlib
 import shutil
 import string
 import warnings
-from typing import Literal
+from typing import Dict, Literal
 
 import anndata as ad
 import duckdb
@@ -72,6 +72,19 @@ file_read_time_write_and_read_time_image = (
     f"{image_dir}/parquet-comparisons-file-write-and-read-time.png"
 )
 
+color_palette = [
+    "#4F58C7",
+    "#BF442F",
+    "#00A37A",
+    "#8950C7",
+    "#CC8148",
+    "#14A9C2",
+    "#CC5275",
+    "#92BA66",
+    "#CC79CC",
+    "#CAA142",
+]
+
 
 def remove_files():
     """
@@ -96,11 +109,6 @@ def remove_files():
         shutil.rmtree(anndata_zarr_name)
 
 
-# remove all files just in case
-remove_files()
-
-
-# + papermill={"duration": 0.017819, "end_time": "2025-09-03T21:55:13.509355", "exception": false, "start_time": "2025-09-03T21:55:13.491536", "status": "completed"}
 def write_anndata(
     df: pd.DataFrame,
     write_to: Literal["h5ad", "zarr"],
@@ -203,6 +211,194 @@ def read_anndata(
     return adata.obs.join(adata.to_df(), how="left").reset_index(drop=True)
 
 
+def generate_format_comparison_plot(
+    df: pd.DataFrame, cols: Dict[str, tuple], title: str, save_file: str
+):
+    """ """
+    key = "dataframe_shape (rows, cols)"
+
+    parts = []
+    for fmt, (mcol, mincol, maxcol) in cols.items():
+        tmp = result[[key, mcol, mincol, maxcol]].copy()
+        tmp["format"] = fmt
+        tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
+        tmp["err_plus"] = tmp["max"] - tmp["mean"]
+        tmp["err_minus"] = tmp["mean"] - tmp["min"]
+        parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
+
+    stats = pd.concat(parts, ignore_index=True)
+
+    x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
+    pos = {k: i for i, k in enumerate(x_order)}  # category → position index
+
+    # 2) give each row its x position and sort per-trace
+    stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+
+    fig = px.line(
+        stats,
+        x=key,
+        y="mean",
+        color="format",
+        error_y="err_plus",
+        error_y_minus="err_minus",
+        markers=True,
+        category_orders={key: x_order},
+        labels={
+            key: "Data Shape",
+            "mean": "Seconds (log)",
+        },  # we'll override titles later
+        log_y=True,
+        title=title,
+        facet_col="format",
+        facet_col_wrap=4,
+        color_discrete_sequence=color_palette,
+        render_mode="webgl",
+        width=1200,
+        height=500,
+    )
+
+    # Remove facet headers
+    fig.for_each_annotation(lambda a: a.update(text=""))
+    for k in list(fig.layout):
+        if k.startswith("xaxis") or k.startswith("yaxis"):
+            fig.layout[k].title = None
+
+    # (Optional) if you still have facet headers, hide them
+    fig.for_each_annotation(lambda a: a.update(text=""))
+
+    # make sure main title is not center aligned
+    # Remove the built-in title
+    fig.update_layout(title_text=None)
+
+    # Add a figure-level title annotation (left-aligned)
+    fig.add_annotation(
+        text="File format read time duration (one column) (seconds)",
+        xref="paper",
+        yref="paper",
+        x=0.0,
+        y=1.0,
+        xanchor="left",
+        yanchor="bottom",
+        showarrow=False,
+        font=dict(size=20),
+        align="left",
+        yshift=32,
+    )
+
+    def _axis_key(ref: str) -> str:
+        # "x"   -> "xaxis",  "x2" -> "xaxis2"
+        # "y"   -> "yaxis",  "y2" -> "yaxis2"
+        return f"{ref[0]}axis" if len(ref) == 1 else f"{ref[0]}axis{ref[1:]}"
+
+    def add_subplot_subtitles(
+        fig, label_by_trace_name=True, rel_offset=0.02, font_size=12
+    ):
+        """
+        Add subplot subtitles centered above each facet.
+
+        Parameters
+        ----------
+        fig : plotly.graph_objects.Figure
+        label_by_trace_name : bool, default=True
+            If True, use trace.name for the text.
+        rel_offset : float, default=0.02
+            Fraction of subplot height to push the label above the top.
+            Smaller values = closer to the plot.
+        font_size : int, default=12
+            Font size for subtitles.
+        """
+        fig.for_each_annotation(
+            lambda a: a.update(text="")
+        )  # clear default facet headers
+        seen = set()
+
+        def _axis_key(ref: str) -> str:
+            return f"{ref[0]}axis" if len(ref) == 1 else f"{ref[0]}axis{ref[1:]}"
+
+        for tr in fig.data:
+            key = (tr.xaxis, tr.yaxis)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            xaxis = _axis_key(tr.xaxis)
+            yaxis = _axis_key(tr.yaxis)
+            xdom = fig.layout[xaxis].domain
+            ydom = fig.layout[yaxis].domain
+
+            # Offset proportional to subplot height
+            height = ydom[1] - ydom[0]
+            y = ydom[1] + rel_offset * height
+            x = (xdom[0] + xdom[1]) / 2
+
+            text = tr.name if label_by_trace_name else "subplot"
+            color = getattr(tr.line, "color", None) or getattr(
+                getattr(tr, "marker", {}), "color", None
+            )
+
+            fig.add_annotation(
+                xref="paper",
+                yref="paper",
+                x=x,
+                y=y,
+                text=text,
+                showarrow=False,
+                xanchor="center",
+                yanchor="bottom",
+                font=dict(size=font_size),
+            )
+
+    add_subplot_subtitles(fig, label_by_trace_name=True)
+
+    fig.add_annotation(
+        text=title,
+        xref="paper",
+        yref="paper",
+        x=0.0,
+        y=1.05,
+        xanchor="left",
+        yanchor="bottom",
+        showarrow=False,
+        font=dict(size=20),
+        align="left",
+        yshift=32,
+    )
+
+    fig.add_annotation(
+        text="Data Shape",
+        xref="paper",
+        yref="paper",
+        x=0.5,
+        y=0,
+        xanchor="center",
+        yanchor="top",
+        showarrow=False,
+        font=dict(size=16),
+        yshift=-60,
+    )
+
+    # Add ONE centered y-axis title for the whole figure
+    fig.add_annotation(
+        text="Seconds (log)",
+        xref="paper",
+        yref="paper",
+        x=0,
+        y=0.5,
+        xanchor="right",
+        yanchor="middle",
+        textangle=-90,
+        showarrow=False,
+        font=dict(size=16),
+        xshift=-50,
+    )
+    pio.write_image(fig, save_file)
+
+
+# -
+
+# remove all files just in case
+remove_files()
+
 # + papermill={"duration": 0.242991, "end_time": "2025-09-03T21:55:13.758506", "exception": false, "start_time": "2025-09-03T21:55:13.515515", "status": "completed"}
 # avoid a "cold start" for tested packages by using them before benchmarks
 df = pd.DataFrame(np.random.rand(2, 2), columns=[f"col_{num}" for num in range(0, 2)])
@@ -227,22 +423,23 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
     # starting rowcount and col count
     nrows = 320
     ncols = 124
-    
+
     # result list for storing data
     results = []
-    
+
     # loop for iterating over increasingly large dataframes
     # and gathering data about operations on them
     for _ in range(1, 6):
         # increase the size of the dataframe
         nrows *= 2
         ncols *= 2
-    
+
         # form a dataframe using randomized data
         df = pd.DataFrame(
-            np.random.rand(nrows, ncols), columns=[f"col_{num}" for num in range(0, ncols)]
+            np.random.rand(nrows, ncols),
+            columns=[f"col_{num}" for num in range(0, ncols)],
         )
-    
+
         # add some string data
         alphabet = np.array(list(string.ascii_lowercase + string.digits))
         df = df.assign(
@@ -254,9 +451,9 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                 for i in range(10)
             }
         )
-    
+
         print(df.shape)
-    
+
         # run multiple times for error and average
         for _ in range(1, 5):
             # remove any existing files in preparation for next steps
@@ -319,7 +516,9 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                         compression="none",
                         dest_path=anndata_h5_noc_name,
                     ),
-                    "anndata_h5ad_noc_size (bytes)": os.stat(anndata_h5_noc_name).st_size,
+                    "anndata_h5ad_noc_size (bytes)": os.stat(
+                        anndata_h5_noc_name
+                    ).st_size,
                     "anndata_h5ad_noc_read_time_all (secs)": timer(
                         read_anndata,
                         path=anndata_h5_noc_name,
@@ -340,7 +539,9 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                         compression="gzip",
                         dest_path=anndata_h5_gzip_name,
                     ),
-                    "anndata_h5ad_gzip_size (bytes)": os.stat(anndata_h5_gzip_name).st_size,
+                    "anndata_h5ad_gzip_size (bytes)": os.stat(
+                        anndata_h5_gzip_name
+                    ).st_size,
                     "anndata_h5ad_gzip_read_time_all (secs)": timer(
                         read_anndata,
                         path=anndata_h5_gzip_name,
@@ -361,7 +562,9 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                         compression="lz4",
                         dest_path=anndata_h5_lz4_name,
                     ),
-                    "anndata_h5ad_lz4_size (bytes)": os.stat(anndata_h5_lz4_name).st_size,
+                    "anndata_h5ad_lz4_size (bytes)": os.stat(
+                        anndata_h5_lz4_name
+                    ).st_size,
                     "anndata_h5ad_lz4_read_time_all (secs)": timer(
                         read_anndata,
                         path=anndata_h5_lz4_name,
@@ -382,7 +585,9 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                         compression="zstd",
                         dest_path=anndata_h5_zstd_name,
                     ),
-                    "anndata_h5ad_zstd_size (bytes)": os.stat(anndata_h5_zstd_name).st_size,
+                    "anndata_h5ad_zstd_size (bytes)": os.stat(
+                        anndata_h5_zstd_name
+                    ).st_size,
                     "anndata_h5ad_zstd_read_time_all (secs)": timer(
                         read_anndata,
                         path=anndata_h5_zstd_name,
@@ -479,8 +684,7 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
                     ),
                 }
             )
-    
-    
+
     df_results = pd.DataFrame(results)
 else:
     df_results = pd.read_parquet("parquet_analysis.parquet")
@@ -493,9 +697,10 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
         df_results["csv_write_time (secs)"] + df_results["csv_read_time_all (secs)"]
     )
     df_results["sqlite_write_and_read_time (secs)"] = (
-        df_results["sqlite_write_time (secs)"] + df_results["sqlite_read_time_all (secs)"]
+        df_results["sqlite_write_time (secs)"]
+        + df_results["sqlite_read_time_all (secs)"]
     )
-    
+
     df_results["anndata_h5ad_noc_write_and_read_time (secs)"] = (
         df_results["anndata_h5ad_noc_write_time (secs)"]
         + df_results["anndata_h5ad_noc_read_time_all (secs)"]
@@ -508,7 +713,7 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
         df_results["anndata_h5ad_lz4_write_time (secs)"]
         + df_results["anndata_h5ad_lz4_read_time_all (secs)"]
     )
-    
+
     df_results["anndata_h5ad_zstd_write_and_read_time (secs)"] = (
         df_results["anndata_h5ad_zstd_write_time (secs)"]
         + df_results["anndata_h5ad_zstd_read_time_all (secs)"]
@@ -517,7 +722,7 @@ if not pathlib.Path("parquet_analysis.parquet").is_file():
         df_results["anndata_zarr_write_time (secs)"]
         + df_results["anndata_zarr_read_time_all (secs)"]
     )
-    
+
     df_results["parquet_noc_write_and_read_time (secs)"] = (
         df_results["parquet_noc_write_time (secs)"]
         + df_results["parquet_noc_read_time_all (secs)"]
@@ -578,9 +783,6 @@ result
 
 # + papermill={"duration": 1.365292, "end_time": "2025-09-03T21:57:21.680374", "exception": false, "start_time": "2025-09-03T21:57:20.315082", "status": "completed"}
 # write time plot
-
-key = "dataframe_shape (rows, cols)"
-
 cols = {
     "CSV (GZIP)": (
         "csv_write_time (secs) mean",
@@ -644,47 +846,69 @@ cols = {
     ),
 }
 
-parts = []
-for fmt, (mcol, mincol, maxcol) in cols.items():
-    tmp = result[[key, mcol, mincol, maxcol]].copy()
-    tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
-    tmp["err_plus"] = tmp["max"] - tmp["mean"]
-    tmp["err_minus"] = tmp["mean"] - tmp["min"]
-    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
-
-
-stats = pd.concat(parts, ignore_index=True)
-
-x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
-pos = {k: i for i, k in enumerate(x_order)}  # category → position index
-
-# 2) give each row its x position and sort per-trace
-stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
-
-fig = px.line(
-    stats,  # already trace-sorted by xpos
-    x=key,
-    y="mean",
-    color="format",
-    error_y="err_plus",
-    error_y_minus="err_minus",
-    markers=True,
-    category_orders={key: x_order},  # sets axis order & legend hover categories
-    labels={key: "Data Shape", "mean": "Seconds (log)"},
-    width=1300,
-    log_y=True,
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
     title="File format write time duration (seconds)",
+    save_file=file_write_time_image,
 )
-fig.update_traces(mode="lines+markers")
-fig.update_traces(marker_color=None, line_color=None).update_layout(
-    colorway=px.colors.qualitative.Dark24
-)
-fig.update_layout(legend_title_text="Format")
-
-
-pio.write_image(fig, file_write_time_image)
 Image(url=file_write_time_image)
+
+# +
+# write time plot
+
+key = "dataframe_shape (rows, cols)"
+
+cols = {
+    "CSV (GZIP)": (
+        "csv_write_time (secs) mean",
+        "csv_write_time (secs) min",
+        "csv_write_time (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_write_time (secs) mean",
+        "sqlite_write_time (secs) min",
+        "sqlite_write_time (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_write_time (secs) mean",
+        "anndata_h5ad_noc_write_time (secs) min",
+        "anndata_h5ad_noc_write_time (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_write_time (secs) mean",
+        "anndata_h5ad_zstd_write_time (secs) min",
+        "anndata_h5ad_zstd_write_time (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_write_time (secs) mean",
+        "anndata_zarr_write_time (secs) min",
+        "anndata_zarr_write_time (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_write_time (secs) mean",
+        "parquet_noc_write_time (secs) min",
+        "parquet_noc_write_time (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_write_time (secs) mean",
+        "parquet_snappy_write_time (secs) min",
+        "parquet_snappy_write_time (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_write_time (secs) mean",
+        "parquet_zstd_write_time (secs) min",
+        "parquet_zstd_write_time (secs) max",
+    ),
+}
+
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
+    title="File format write time duration (seconds)",
+    save_file=file_write_time_image.replace(".parquet", "-reduced.parquet"),
+)
+Image(url=file_write_time_image.replace(".parquet", "-reduced.parquet"))
 
 # + papermill={"duration": 0.313924, "end_time": "2025-09-03T21:57:22.005171", "exception": false, "start_time": "2025-09-03T21:57:21.691247", "status": "completed"}
 # file size plot
@@ -758,8 +982,6 @@ Image(url=file_storage_size_image)
 
 # + papermill={"duration": 0.250629, "end_time": "2025-09-03T21:57:22.266295", "exception": false, "start_time": "2025-09-03T21:57:22.015666", "status": "completed"}
 # read time plot (all columns)
-key = "dataframe_shape (rows, cols)"
-
 cols = {
     "CSV (GZIP)": (
         "csv_read_time_all (secs) mean",
@@ -823,53 +1045,69 @@ cols = {
     ),
 }
 
-parts = []
-for fmt, (mcol, mincol, maxcol) in cols.items():
-    tmp = result[[key, mcol, mincol, maxcol]].copy()
-    tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
-    tmp["err_plus"] = tmp["max"] - tmp["mean"]
-    tmp["err_minus"] = tmp["mean"] - tmp["min"]
-    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
-
-
-stats = pd.concat(parts, ignore_index=True)
-
-x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
-pos = {k: i for i, k in enumerate(x_order)}  # category → position index
-
-# 2) give each row its x position and sort per-trace
-stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
-
-fig = px.line(
-    stats,  # already trace-sorted by xpos
-    x=key,
-    y="mean",
-    color="format",
-    error_y="err_plus",
-    error_y_minus="err_minus",
-    markers=True,
-    category_orders={key: x_order},  # sets axis order & legend hover categories
-    labels={key: "Data Shape", "mean": "Seconds"},
-    width=1300,
-    log_y=True,
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
     title="File format read time duration (full dataset) (seconds)",
+    save_file=file_read_time_all_image,
 )
-fig.update_traces(mode="lines+markers")
-fig.update_traces(marker_color=None, line_color=None).update_layout(
-    colorway=px.colors.qualitative.Dark24
-)
-fig.update_layout(legend_title_text="Format")
-
-
-pio.write_image(fig, file_read_time_all_image)
 Image(url=file_read_time_all_image)
+
+# +
+# read time plot (all columns)
+cols = {
+    "CSV (GZIP)": (
+        "csv_read_time_all (secs) mean",
+        "csv_read_time_all (secs) min",
+        "csv_read_time_all (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_read_time_all (secs) mean",
+        "sqlite_read_time_all (secs) min",
+        "sqlite_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_read_time_all (secs) mean",
+        "anndata_h5ad_noc_read_time_all (secs) min",
+        "anndata_h5ad_noc_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_read_time_all (secs) mean",
+        "anndata_h5ad_zstd_read_time_all (secs) min",
+        "anndata_h5ad_zstd_read_time_all (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_read_time_all (secs) mean",
+        "anndata_zarr_read_time_all (secs) min",
+        "anndata_zarr_read_time_all (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_read_time_all (secs) mean",
+        "parquet_noc_read_time_all (secs) min",
+        "parquet_noc_read_time_all (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_read_time_all (secs) mean",
+        "parquet_snappy_read_time_all (secs) min",
+        "parquet_snappy_read_time_all (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_read_time_all (secs) mean",
+        "parquet_zstd_read_time_all (secs) min",
+        "parquet_zstd_read_time_all (secs) max",
+    ),
+}
+
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
+    title="File format read time duration (full dataset) (seconds)",
+    save_file=file_read_time_all_image.replace(".png", "-reduced.png"),
+)
+Image(url=file_read_time_all_image.replace(".png", "-reduced.png"))
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
 # read time plot (one column)
-
-key = "dataframe_shape (rows, cols)"
-
 cols = {
     "CSV (GZIP)": (
         "csv_read_time_one (secs) mean",
@@ -933,48 +1171,66 @@ cols = {
     ),
 }
 
-
-parts = []
-for fmt, (mcol, mincol, maxcol) in cols.items():
-    tmp = result[[key, mcol, mincol, maxcol]].copy()
-    tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
-    tmp["err_plus"] = tmp["max"] - tmp["mean"]
-    tmp["err_minus"] = tmp["mean"] - tmp["min"]
-    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
-
-
-stats = pd.concat(parts, ignore_index=True)
-
-x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
-pos = {k: i for i, k in enumerate(x_order)}  # category → position index
-
-# 2) give each row its x position and sort per-trace
-stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
-
-fig = px.line(
-    stats,  # already trace-sorted by xpos
-    x=key,
-    y="mean",
-    color="format",
-    error_y="err_plus",
-    error_y_minus="err_minus",
-    markers=True,
-    category_orders={key: x_order},  # sets axis order & legend hover categories
-    labels={key: "Data Shape", "mean": "Seconds (log)"},
-    width=1300,
-    log_y=True,
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
     title="File format read time duration (one column) (seconds)",
+    save_file=file_read_time_one_image,
 )
-fig.update_traces(mode="lines+markers")
-fig.update_traces(marker_color=None, line_color=None).update_layout(
-    colorway=px.colors.qualitative.Dark24
-)
-fig.update_layout(legend_title_text="Format")
-
-
-pio.write_image(fig, file_read_time_one_image)
 Image(url=file_read_time_one_image)
+
+# +
+# read time plot (one column)
+cols = {
+    "CSV (GZIP)": (
+        "csv_read_time_one (secs) mean",
+        "csv_read_time_one (secs) min",
+        "csv_read_time_one (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_read_time_one (secs) mean",
+        "sqlite_read_time_one (secs) min",
+        "sqlite_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_read_time_one (secs) mean",
+        "anndata_h5ad_noc_read_time_one (secs) min",
+        "anndata_h5ad_noc_read_time_one (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_read_time_one (secs) mean",
+        "anndata_h5ad_zstd_read_time_one (secs) min",
+        "anndata_h5ad_zstd_read_time_one (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_read_time_one (secs) mean",
+        "anndata_zarr_read_time_one (secs) min",
+        "anndata_zarr_read_time_one (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_read_time_one (secs) mean",
+        "parquet_noc_read_time_one (secs) min",
+        "parquet_noc_read_time_one (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_read_time_one (secs) mean",
+        "parquet_snappy_read_time_one (secs) min",
+        "parquet_snappy_read_time_one (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_read_time_one (secs) mean",
+        "parquet_zstd_read_time_one (secs) min",
+        "parquet_zstd_read_time_one (secs) max",
+    ),
+}
+
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
+    title="File format read time duration (one column) (seconds)",
+    save_file=file_read_time_one_image.replace(".png", "-reduced.png"),
+)
+Image(url=file_read_time_one_image.replace(".png", "-reduced.png"))
 
 # +
 # write and read time plot (combined times from write and read all)
@@ -1044,45 +1300,66 @@ cols = {
     ),
 }
 
-
-parts = []
-for fmt, (mcol, mincol, maxcol) in cols.items():
-    tmp = result[[key, mcol, mincol, maxcol]].copy()
-    tmp["format"] = fmt
-    tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
-    tmp["err_plus"] = tmp["max"] - tmp["mean"]
-    tmp["err_minus"] = tmp["mean"] - tmp["min"]
-    parts.append(tmp[[key, "format", "mean", "err_plus", "err_minus"]])
-
-
-stats = pd.concat(parts, ignore_index=True)
-
-x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
-pos = {k: i for i, k in enumerate(x_order)}  # category → position index
-
-# 2) give each row its x position and sort per-trace
-stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
-
-fig = px.line(
-    stats,  # already trace-sorted by xpos
-    x=key,
-    y="mean",
-    color="format",
-    error_y="err_plus",
-    error_y_minus="err_minus",
-    markers=True,
-    category_orders={key: x_order},  # sets axis order & legend hover categories
-    labels={key: "Data Shape", "mean": "Seconds (log)"},
-    width=1300,
-    log_y=True,
-    title="File format write and read time (full dataset) (seconds)",
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
+    title="File format read and write time duration (full dataset) (seconds)",
+    save_file=file_read_time_write_and_read_time_image,
 )
-fig.update_traces(mode="lines+markers")
-fig.update_traces(marker_color=None, line_color=None).update_layout(
-    colorway=px.colors.qualitative.Dark24
-)
-fig.update_layout(legend_title_text="Format")
-
-
-pio.write_image(fig, file_read_time_write_and_read_time_image)
 Image(url=file_read_time_write_and_read_time_image)
+
+# +
+# write and read time plot (combined times from write and read all)
+
+key = "dataframe_shape (rows, cols)"
+
+cols = {
+    "CSV (GZIP)": (
+        "csv_write_and_read_time (secs) mean",
+        "csv_write_and_read_time (secs) min",
+        "csv_write_and_read_time (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_write_and_read_time (secs) mean",
+        "sqlite_write_and_read_time (secs) min",
+        "sqlite_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - uncompressed)": (
+        "anndata_h5ad_noc_write_and_read_time (secs) mean",
+        "anndata_h5ad_noc_write_and_read_time (secs) min",
+        "anndata_h5ad_noc_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_write_and_read_time (secs) mean",
+        "anndata_h5ad_zstd_write_and_read_time (secs) min",
+        "anndata_h5ad_zstd_write_and_read_time (secs) max",
+    ),
+    "AnnData (Zarr)": (
+        "anndata_zarr_write_and_read_time (secs) mean",
+        "anndata_zarr_write_and_read_time (secs) min",
+        "anndata_zarr_write_and_read_time (secs) max",
+    ),
+    "Parquet (uncompressed)": (
+        "parquet_noc_write_and_read_time (secs) mean",
+        "parquet_noc_write_and_read_time (secs) min",
+        "parquet_noc_write_and_read_time (secs) max",
+    ),
+    "Parquet (Snappy)": (
+        "parquet_snappy_write_and_read_time (secs) mean",
+        "parquet_snappy_write_and_read_time (secs) min",
+        "parquet_snappy_write_and_read_time (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_write_and_read_time (secs) mean",
+        "parquet_zstd_write_and_read_time (secs) min",
+        "parquet_zstd_write_and_read_time (secs) max",
+    ),
+}
+
+generate_format_comparison_plot(
+    df=result,
+    cols=cols,
+    title="File format read and write time duration (full dataset) (seconds)",
+    save_file=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"),
+)
+Image(url=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"))
