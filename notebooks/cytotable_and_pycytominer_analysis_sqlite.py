@@ -105,85 +105,93 @@ else:
     results = []
 
 # + papermill={"duration": 3844.269619, "end_time": "2025-05-14T18:13:56.454944", "exception": false, "start_time": "2025-05-14T17:09:52.185325", "status": "completed"}
-# Number of iterations for each combination
-num_iterations = 6
+# only run if we don't already have results
+if not pathlib.Path(results_parquet_file).exists():
+    # Number of iterations for each combination
+    num_iterations = 6
 
-# Loop through each combination of example file and data file
-for example_file, example_data in itertools.product(
-    example_files_list, example_data_list
-):
-    for iteration in range(num_iterations):
-        print(f"Starting {example_file} with {example_data}, iteration {iteration}.")
-        # Skip if this combination and iteration are already processed
-        if any(
-            result["file_input"] == example_file
-            and result["data_input"] == example_data
-            and result["iteration"] == iteration
-            for result in results
-        ):
+    # Loop through each combination of example file and data file
+    for example_file, example_data in itertools.product(
+        example_files_list, example_data_list
+    ):
+        for iteration in range(num_iterations):
             print(
-                f"Skipping already processed: {example_file} with {example_data}, iteration {iteration}"
+                f"Starting {example_file} with {example_data}, iteration {iteration}."
             )
-            continue
+            # Skip if this combination and iteration are already processed
+            if any(
+                result["file_input"] == example_file
+                and result["data_input"] == example_data
+                and result["iteration"] == iteration
+                for result in results
+            ):
+                print(
+                    f"Skipping already processed: {example_file} with {example_data}, iteration {iteration}"
+                )
+                continue
 
-        try:
-            # gather memory peak and time duration
-            memory_peak, time_duration = get_memory_peak_and_time_duration(
-                cmd=[
-                    "python",
-                    example_file,
-                    example_data,
-                ],
-                polling_pause_seconds=0.1,
-                # if we have a multiprocessed parsl process skip memory
-                # (we will check this via parsl monitoring).
-                skip_memory_check=("multiprocess" in example_file),
-            )
+            try:
+                # gather memory peak and time duration
+                memory_peak, time_duration = get_memory_peak_and_time_duration(
+                    cmd=[
+                        "python",
+                        example_file,
+                        example_data,
+                    ],
+                    polling_pause_seconds=0.1,
+                    # if we have a multiprocessed parsl process skip memory
+                    # (we will check this via parsl monitoring).
+                    skip_memory_check=("multiprocess" in example_file),
+                )
 
-            # Append the result
-            results.append(
-                {
-                    "file_input": example_file.replace(f"{examples_dir}/", ""),
-                    "data_input": example_data,
-                    "iteration": iteration,
-                    "time_duration (secs)": time_duration,
-                    "peak_memory (bytes)": (
-                        memory_peak
-                        # if we have a multiprocessed parsl result we must
-                        # gather the peak memory using parsl's monitoring
-                        # database.
-                        if "multiprocess" not in example_file
-                        else get_parsl_peak_memory(db_file=db_file)
-                    ),
-                }
-            )
+                # Append the result
+                results.append(
+                    {
+                        "file_input": example_file.replace(f"{examples_dir}/", ""),
+                        "data_input": example_data,
+                        "iteration": iteration,
+                        "time_duration (secs)": time_duration,
+                        "peak_memory (bytes)": (
+                            memory_peak
+                            # if we have a multiprocessed parsl result we must
+                            # gather the peak memory using parsl's monitoring
+                            # database.
+                            if "multiprocess" not in example_file
+                            else get_parsl_peak_memory(db_file=db_file)
+                        ),
+                    }
+                )
 
-            # Save intermediate results to Parquet
-            df_results = pd.DataFrame(results)
-            df_results.to_parquet(results_parquet_file, index=False)
+                # Save intermediate results to Parquet
+                df_results = pd.DataFrame(results)
+                df_results.to_parquet(results_parquet_file, index=False)
 
-        except Exception as e:
-            print(
-                f"Error processing {example_file} with {example_data}, iteration {iteration}: {e}"
-            )
+            except Exception as e:
+                print(
+                    f"Error processing {example_file} with {example_data}, iteration {iteration}: {e}"
+                )
 
-        finally:
-            # remove monitoring database if present from parsl processing
-            if pathlib.Path(db_file).is_file():
-                pathlib.Path(db_file).unlink()
-            print(
-                f"Finished {example_file} with {example_data}, iteration {iteration}."
-            )
+            finally:
+                # remove monitoring database if present from parsl processing
+                if pathlib.Path(db_file).is_file():
+                    pathlib.Path(db_file).unlink()
+                print(
+                    f"Finished {example_file} with {example_data}, iteration {iteration}."
+                )
 
+    # Final save to Parquet
+    df_results = pd.DataFrame(results)
+    df_results.to_parquet(results_parquet_file, index=False)
 
-# Final save to Parquet
-df_results = pd.DataFrame(results)
-df_results.to_parquet(results_parquet_file, index=False)
-
-print(f"Processing complete. Results saved to '{results_parquet_file}'.")
-
+    print(f"Processing complete. Results saved to '{results_parquet_file}'.")
 
 # + papermill={"duration": 0.060065, "end_time": "2025-05-14T18:13:56.540533", "exception": false, "start_time": "2025-05-14T18:13:56.480468", "status": "completed"}
+# replace filename for clarity and later x-axis sorting
+df_results.loc[
+    df_results["data_input"] == "examples/data/all_cellprofiler.sqlite", "data_input"
+] = "examples/data/all_cellprofiler-x1.sqlite"
+
+
 # add columns for data understandability in plots
 def get_file_size_mb(file_path):
     """
