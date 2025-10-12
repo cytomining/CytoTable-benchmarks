@@ -974,11 +974,87 @@ fig.update_layout(
         bgcolor="rgba(255,255,255,0.8)",
     ),
     margin=dict(r=220),  # add right margin so legend fits
-    font=dict(size=18),
+    font=dict(size=16),
 )
 
 pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
+
+# +
+# Keep the same key
+key = "dataframe_shape (rows, cols)"
+
+# ↓ Reduced to only the formats you want
+size_cols = {
+    "csv_size (bytes)": "CSV (GZIP)",
+    "sqlite_size (bytes)": "SQLite",
+    "anndata_h5ad_zstd_size (bytes)": "AnnData (H5AD - ZSTD)",
+    "parquet_zstd_size (bytes)": "Parquet (ZSTD)",
+}
+
+# (Optional) sanity check: fail fast if a requested column is missing
+missing = [c for c in size_cols if c not in df_results.columns]
+if missing:
+    raise KeyError(f"Missing expected size columns: {missing}")
+
+# Long-form + average across repeats
+long = (
+    df_results.melt(
+        id_vars=[key],
+        value_vars=list(size_cols.keys()),
+        var_name="col",
+        value_name="bytes",
+    )
+    .dropna(subset=["bytes"])
+)
+long["format"] = long["col"].map(size_cols)
+
+stats = long.groupby([key, "format"], as_index=False)["bytes"].mean()
+
+# x-axis category order (unchanged from your flow)
+x_order = result[key].iloc[::-1].tolist()
+
+# Pre-sort so each trace follows x_order
+pos = {cat: i for i, cat in enumerate(x_order)}
+stats_sorted = (
+    stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
+)
+
+# Optional: lock legend/color order to a specific sequence
+format_order = [
+    "CSV (GZIP)",
+    "SQLite",
+    "AnnData (H5AD - ZSTD)",
+    "Parquet (ZSTD)",
+]
+
+fig = px.line(
+    stats_sorted,
+    x=key,
+    y="bytes",
+    color="format",
+    markers=True,
+    category_orders={key: x_order, "format": format_order},
+    labels={key: "Data Shape", "bytes": "Bytes"},
+    width=1300,
+    title="File format size (bytes)",
+)
+
+fig.update_traces(mode="lines+markers")
+fig.update_xaxes(autorange="reversed")
+# No need to force colors; Plotly will handle 4 traces nicely
+fig.update_layout(
+    legend=dict(
+        x=1.02, y=1, xanchor="left", yanchor="top",
+        bgcolor="rgba(255,255,255,0.8)",
+    ),
+    margin=dict(r=220),
+    font=dict(size=16),
+)
+
+pio.write_image(fig, (img_file := file_storage_size_image.replace(".png","-reduced.png")))
+Image(url=img_file)
+
 
 # + papermill={"duration": 0.250629, "end_time": "2025-09-03T21:57:22.266295", "exception": false, "start_time": "2025-09-03T21:57:22.015666", "status": "completed"}
 # read time plot (all columns)
@@ -1105,6 +1181,85 @@ generate_format_comparison_plot(
     save_file=file_read_time_all_image.replace(".png", "-reduced.png"),
 )
 Image(url=file_read_time_all_image.replace(".png", "-reduced.png"))
+
+# +
+key = "dataframe_shape (rows, cols)"
+
+# Use your reduced set (adjust if you want more/less)
+cols = {
+    "CSV (GZIP)": (
+        "csv_read_time_all (secs) mean",
+        "csv_read_time_all (secs) min",
+        "csv_read_time_all (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_read_time_all (secs) mean",
+        "sqlite_read_time_all (secs) min",
+        "sqlite_read_time_all (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_read_time_all (secs) mean",
+        "anndata_h5ad_zstd_read_time_all (secs) min",
+        "anndata_h5ad_zstd_read_time_all (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_read_time_all (secs) mean",
+        "parquet_zstd_read_time_all (secs) min",
+        "parquet_zstd_read_time_all (secs) max",
+    ),
+}
+
+# Build long dataframe with mean/min/max → error bars
+records = []
+for fmt, (mean_col, min_col, max_col) in cols.items():
+    tmp = result[[key, mean_col, min_col, max_col]].copy()
+    tmp["format"] = fmt
+    tmp.rename(
+        columns={mean_col: "mean", min_col: "min", max_col: "max"},
+        inplace=True,
+    )
+    records.append(tmp)
+
+long = pd.concat(records, ignore_index=True).dropna(subset=["mean"])
+
+# Error bars: distance from mean to max/min
+long["err_plus"] = (long["max"] - long["mean"]).clip(lower=0)
+long["err_minus"] = (long["mean"] - long["min"]).clip(lower=0)
+
+# Preserve your original x ordering (reversed)
+x_order = result[key].iloc[::-1].drop_duplicates().tolist()
+pos = {cat: i for i, cat in enumerate(x_order)}
+long_sorted = long.assign(xpos=long[key].map(pos)).sort_values(["format", "xpos"])
+
+# Single figure, one line per format + error bars
+fig = px.line(
+    long_sorted,
+    x=key,
+    y="mean",
+    color="format",
+    error_y="err_plus",
+    error_y_minus="err_minus",
+    markers=True,
+    category_orders={key: x_order, "format": list(cols.keys())},
+    labels={key: "Data Shape", "mean": "Read Time (s)"},
+    width=1300,
+    title="File format read time duration (full dataset) with error bars",
+)
+
+fig.update_traces(mode="lines+markers")
+fig.update_xaxes(autorange="reversed")
+fig.update_layout(
+    legend=dict(
+        x=1.02, y=1, xanchor="left", yanchor="top",
+        bgcolor="rgba(255,255,255,0.8)",
+    ),
+    margin=dict(r=220),
+    font=dict(size=16),
+)
+
+
+pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet.png")))
+Image(url=img_file)
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
 # read time plot (one column)
