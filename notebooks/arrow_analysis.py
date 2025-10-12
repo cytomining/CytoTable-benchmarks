@@ -123,6 +123,7 @@ fig = px.bar(
     barmode="group",
     labels={"dataframe_shape (rows, cols)": "Data Shape", "value": "Seconds"},
     width=1300,
+    color_discrete_sequence=px.colors.qualitative.T10
 )
 fig.update_layout(
     legend_title_text="In-memory Read Duration",
@@ -150,6 +151,7 @@ fig = px.bar(
     barmode="group",
     labels={"dataframe_shape (rows, cols)": "Data Shape", "value": "Bytes"},
     width=1300,
+    color_discrete_sequence=px.colors.qualitative.T10
 )
 fig.update_layout(
     legend_title_text="In-memory Data Size",
@@ -163,3 +165,4 @@ pio.write_image(fig, mem_read_size_image)
 Image(url=mem_read_size_image)
 
 # + papermill={"duration": 0.005354, "end_time": "2025-05-14T17:08:14.066558", "exception": false, "start_time": "2025-05-14T17:08:14.061204", "status": "completed"}
+
