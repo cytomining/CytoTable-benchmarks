@@ -1028,21 +1028,19 @@ format_order = [
     "Parquet (ZSTD)",
 ]
 
-fig = px.line(
+fig = px.bar(
     stats_sorted,
     x=key,
     y="bytes",
     color="format",
-    markers=True,
+    barmode="group",  # side-by-side bars per data shape
     category_orders={key: x_order, "format": format_order},
     labels={key: "Data Shape", "bytes": "Bytes"},
     width=1300,
     title="File format size (bytes)",
 )
 
-fig.update_traces(mode="lines+markers")
-fig.update_xaxes(autorange="reversed")
-# No need to force colors; Plotly will handle 4 traces nicely
+# Optional polish
 fig.update_layout(
     legend=dict(
         x=1.02, y=1, xanchor="left", yanchor="top",
@@ -1050,7 +1048,12 @@ fig.update_layout(
     ),
     margin=dict(r=220),
     font=dict(size=16),
+    bargap=0.15,       # space between groups
+    bargroupgap=0.05,  # space within a group
 )
+
+# Keep the same left-to-right ordering convention as before
+fig.update_xaxes(autorange="reversed")
 
 pio.write_image(fig, (img_file := file_storage_size_image.replace(".png","-reduced.png")))
 Image(url=img_file)
