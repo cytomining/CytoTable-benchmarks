@@ -1234,30 +1234,30 @@ x_order = result[key].iloc[::-1].drop_duplicates().tolist()
 pos = {cat: i for i, cat in enumerate(x_order)}
 long_sorted = long.assign(xpos=long[key].map(pos)).sort_values(["format", "xpos"])
 
-# Single figure, one line per format + error bars
-fig = px.line(
+rev_order = x_order[::-1] 
+
+fig = px.bar(
     long_sorted,
-    x=key,
-    y="mean",
-    color="format",
-    error_y="err_plus",
-    error_y_minus="err_minus",
-    markers=True,
-    category_orders={key: x_order, "format": list(cols.keys())},
+    x=key,                # categories (data shapes)
+    y="mean",             # bar height (read time)
+    color="format",       # one bar per format within each category
+    barmode="group",
+    error_y="err_plus",   # max - mean
+    error_y_minus="err_minus",  # mean - min
+   category_orders={key: rev_order, "format": list(cols.keys())},
     labels={key: "Data Shape", "mean": "Read Time (s)"},
     width=1300,
     title="File format read time duration (full dataset) with error bars",
 )
 
-fig.update_traces(mode="lines+markers")
-fig.update_xaxes(autorange="reversed")
+# Styling (no markers in bar charts)
 fig.update_layout(
-    legend=dict(
-        x=1.02, y=1, xanchor="left", yanchor="top",
-        bgcolor="rgba(255,255,255,0.8)",
-    ),
+    legend=dict(x=1.02, y=1, xanchor="left", yanchor="top",
+                bgcolor="rgba(255,255,255,0.8)"),
     margin=dict(r=220),
     font=dict(size=16),
+    bargap=0.15,
+    bargroupgap=0.05,
 )
 
 
