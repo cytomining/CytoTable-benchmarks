@@ -1245,9 +1245,10 @@ fig = px.bar(
     error_y="err_plus",   # max - mean
     error_y_minus="err_minus",  # mean - min
    category_orders={key: rev_order, "format": list(cols.keys())},
-    labels={key: "Data Shape", "mean": "Read Time (s)"},
+    labels={key: "Data Shape", "mean": "Read Time (s)(log)"},
     width=1300,
     title="File format read time duration (full dataset) with error bars",
+    log_y=True
 )
 
 # Styling (no markers in bar charts)
@@ -1261,7 +1262,7 @@ fig.update_layout(
 )
 
 
-pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet.png")))
+pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")))
 Image(url=img_file)
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
@@ -1521,3 +1522,86 @@ generate_format_comparison_plot(
     save_file=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"),
 )
 Image(url=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"))
+
+# +
+key = "dataframe_shape (rows, cols)"
+
+# Use your reduced set (adjust if you want more/less)
+cols = {
+    "CSV (GZIP)": (
+        "csv_write_and_read_time (secs) mean",
+        "csv_write_and_read_time (secs) min",
+        "csv_write_and_read_time (secs) max",
+    ),
+    "SQLite": (
+        "sqlite_write_and_read_time (secs) mean",
+        "sqlite_write_and_read_time (secs) min",
+        "sqlite_write_and_read_time (secs) max",
+    ),
+    "AnnData (H5AD - ZSTD)": (
+        "anndata_h5ad_zstd_write_and_read_time (secs) mean",
+        "anndata_h5ad_zstd_write_and_read_time (secs) min",
+        "anndata_h5ad_zstd_write_and_read_time (secs) max",
+    ),
+    "Parquet (ZSTD)": (
+        "parquet_zstd_write_and_read_time (secs) mean",
+        "parquet_zstd_write_and_read_time (secs) min",
+        "parquet_zstd_write_and_read_time (secs) max",
+    ),
+}
+
+# Build long dataframe with mean/min/max → error bars
+records = []
+for fmt, (mean_col, min_col, max_col) in cols.items():
+    tmp = result[[key, mean_col, min_col, max_col]].copy()
+    tmp["format"] = fmt
+    tmp.rename(
+        columns={mean_col: "mean", min_col: "min", max_col: "max"},
+        inplace=True,
+    )
+    records.append(tmp)
+
+long = pd.concat(records, ignore_index=True).dropna(subset=["mean"])
+
+# Error bars: distance from mean to max/min
+long["err_plus"] = (long["max"] - long["mean"]).clip(lower=0)
+long["err_minus"] = (long["mean"] - long["min"]).clip(lower=0)
+
+# Preserve your original x ordering (reversed)
+x_order = result[key].iloc[::-1].drop_duplicates().tolist()
+pos = {cat: i for i, cat in enumerate(x_order)}
+long_sorted = long.assign(xpos=long[key].map(pos)).sort_values(["format", "xpos"])
+
+rev_order = x_order[::-1] 
+
+fig = px.bar(
+    long_sorted,
+    x=key,                # categories (data shapes)
+    y="mean",             # bar height (read time)
+    color="format",       # one bar per format within each category
+    barmode="group",
+    error_y="err_plus",   # max - mean
+    error_y_minus="err_minus",  # mean - min
+   category_orders={key: rev_order, "format": list(cols.keys())},
+    labels={key: "Data Shape", "mean": "Write and read time (s)(log)"},
+    width=1300,
+    title="File format write and read time duration (full dataset) with error bars",
+    log_y=True
+)
+
+# Styling (no markers in bar charts)
+fig.update_layout(
+    legend=dict(x=1.02, y=1, xanchor="left", yanchor="top",
+                bgcolor="rgba(255,255,255,0.8)"),
+    margin=dict(r=220),
+    font=dict(size=16),
+    bargap=0.15,
+    bargroupgap=0.05,
+)
+
+
+pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")))
+Image(url=img_file)
+# -
+
+
