@@ -32,6 +32,7 @@ import hdf5plugin
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 from anndata import ImplicitModificationWarning
 from IPython.display import Image
@@ -981,7 +982,6 @@ pio.write_image(fig, file_storage_size_image)
 Image(url=file_storage_size_image)
 
 # +
-# Keep the same key
 key = "dataframe_shape (rows, cols)"
 
 # ↓ Reduced to only the formats you want
@@ -998,35 +998,36 @@ if missing:
     raise KeyError(f"Missing expected size columns: {missing}")
 
 # Long-form + average across repeats
-long = (
-    df_results.melt(
-        id_vars=[key],
-        value_vars=list(size_cols.keys()),
-        var_name="col",
-        value_name="bytes",
-    )
-    .dropna(subset=["bytes"])
-)
+long = df_results.melt(
+    id_vars=[key],
+    value_vars=list(size_cols.keys()),
+    var_name="col",
+    value_name="bytes",
+).dropna(subset=["bytes"])
 long["format"] = long["col"].map(size_cols)
 
 stats = long.groupby([key, "format"], as_index=False)["bytes"].mean()
 
-# x-axis category order (unchanged from your flow)
+# x-axis category order (groups on the axis) – keep your existing convention
 x_order = result[key].iloc[::-1].tolist()
 
 # Pre-sort so each trace follows x_order
 pos = {cat: i for i, cat in enumerate(x_order)}
-stats_sorted = (
-    stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
-)
+stats_sorted = stats.assign(xpos=stats[key].map(pos))
 
-# Optional: lock legend/color order to a specific sequence
+# Desired legend/color order
 format_order = [
     "CSV (GZIP)",
     "SQLite",
     "AnnData (H5AD - ZSTD)",
     "Parquet (ZSTD)",
 ]
+
+# Enforce categorical order then sort (xpos, format)
+stats_sorted["format"] = pd.Categorical(
+    stats_sorted["format"], categories=format_order, ordered=True
+)
+stats_sorted = stats_sorted.sort_values(["xpos", "format"]).drop(columns="xpos")
 
 fig = px.bar(
     stats_sorted,
@@ -1035,29 +1036,37 @@ fig = px.bar(
     color="format",
     barmode="group",  # side-by-side bars per data shape
     category_orders={key: x_order, "format": format_order},
-    labels={key: "Data Shape", "bytes": "Bytes"},
+    labels={key: "Data Shape", "bytes": "Output file size (bytes)"},
     width=1300,
     title="File format size (bytes)",
 )
 
-# Optional polish
+# ---- Flip bars within each group (reverse trace order) but keep legend order ----
+# Reverse the actual trace list (controls bar order)
+fig.data = tuple(fig.data[::-1])
+# Show legend in the original (non-reversed) order
+fig.update_layout(legend_traceorder="reversed")
+
+# Inset legend + styling
 fig.update_layout(
+    legend_title_text=None,
     legend=dict(
-        x=1.02, y=1, xanchor="left", yanchor="top",
+        x=0.02, y=0.98, xanchor="left", yanchor="top",
         bgcolor="rgba(255,255,255,0.8)",
     ),
-    margin=dict(r=220),
-    font=dict(size=16),
-    bargap=0.15,       # space between groups
-    bargroupgap=0.05,  # space within a group
+    margin=dict(r=80, t=80, l=80, b=80),
+    font=dict(size=18),
+    bargap=0.15,      # space between groups
+    bargroupgap=0.05, # space within a group
 )
 
-# Keep the same left-to-right ordering convention as before
+# Keep the same left-to-right x ordering convention as before
 fig.update_xaxes(autorange="reversed")
 
-pio.write_image(fig, (img_file := file_storage_size_image.replace(".png","-reduced.png")))
+pio.write_image(
+    fig, (img_file := file_storage_size_image.replace(".png", "-reduced.png"))
+)
 Image(url=img_file)
-
 
 # + papermill={"duration": 0.250629, "end_time": "2025-09-03T21:57:22.266295", "exception": false, "start_time": "2025-09-03T21:57:22.015666", "status": "completed"}
 # read time plot (all columns)
@@ -1188,7 +1197,6 @@ Image(url=file_read_time_all_image.replace(".png", "-reduced.png"))
 # +
 key = "dataframe_shape (rows, cols)"
 
-# Use your reduced set (adjust if you want more/less)
 cols = {
     "CSV (GZIP)": (
         "csv_read_time_all (secs) mean",
@@ -1212,57 +1220,78 @@ cols = {
     ),
 }
 
-# Build long dataframe with mean/min/max → error bars
+# --- Build long dataframe with mean/min/max → error bars ---
 records = []
 for fmt, (mean_col, min_col, max_col) in cols.items():
     tmp = result[[key, mean_col, min_col, max_col]].copy()
     tmp["format"] = fmt
-    tmp.rename(
-        columns={mean_col: "mean", min_col: "min", max_col: "max"},
-        inplace=True,
-    )
+    tmp.rename(columns={mean_col: "mean", min_col: "min", max_col: "max"}, inplace=True)
     records.append(tmp)
 
 long = pd.concat(records, ignore_index=True).dropna(subset=["mean"])
-
-# Error bars: distance from mean to max/min
 long["err_plus"] = (long["max"] - long["mean"]).clip(lower=0)
 long["err_minus"] = (long["mean"] - long["min"]).clip(lower=0)
 
-# Preserve your original x ordering (reversed)
-x_order = result[key].iloc[::-1].drop_duplicates().tolist()
-pos = {cat: i for i, cat in enumerate(x_order)}
-long_sorted = long.assign(xpos=long[key].map(pos)).sort_values(["format", "xpos"])
+# --- Orders ---
+# X groups in the order they appear in the data (keep as-is)
+x_seen = list(pd.unique(long[key]))
+# If you want reversed x later, switch to: x_seen = x_seen[::-1]
 
-rev_order = x_order[::-1] 
+# Fixed bar/legend order inside each group
+format_order = ["CSV (GZIP)", "SQLite", "AnnData (H5AD - ZSTD)", "Parquet (ZSTD)"]
+long["format"] = pd.Categorical(long["format"], categories=format_order, ordered=True)
 
-fig = px.bar(
-    long_sorted,
-    x=key,                # categories (data shapes)
-    y="mean",             # bar height (read time)
-    color="format",       # one bar per format within each category
-    barmode="group",
-    error_y="err_plus",   # max - mean
-    error_y_minus="err_minus",  # mean - min
-   category_orders={key: rev_order, "format": list(cols.keys())},
-    labels={key: "Data Shape", "mean": "Read Time (s)(log)"},
-    width=1300,
-    title="File format read time duration (full dataset) with error bars",
-    log_y=True
-)
+# Sort table to make traces stable (x then format)
+long_sorted = long.sort_values([key, "format"])
 
-# Styling (no markers in bar charts)
+# --- Build fig with explicit trace order (guarantees bar order) ---
+fig = go.Figure()
+for fmt in format_order:
+    sub = long_sorted[long_sorted["format"] == fmt]
+    # Plotly needs arrays (lists); ensure aligned per x order
+    # Reindex each sub to x_seen to keep empty categories aligned if any missing
+    sub = sub.set_index(key).reindex(x_seen)
+    fig.add_trace(
+        go.Bar(
+            name=fmt,
+            x=[str(x) for x in x_seen],  # safe labels (tuples → str)
+            y=sub["mean"],
+            error_y=dict(
+                type="data",
+                array=sub["err_plus"],
+                arrayminus=sub["err_minus"],
+                visible=True,
+            ),
+            # offsetgroup ensures grouped bars align even with missing categories
+            offsetgroup=fmt,
+        )
+    )
+
 fig.update_layout(
-    legend=dict(x=1.02, y=1, xanchor="left", yanchor="top",
-                bgcolor="rgba(255,255,255,0.8)"),
-    margin=dict(r=220),
-    font=dict(size=16),
+    barmode="group",
+    title="File format read time duration (full dataset) with error bars",
+    xaxis_title="Data Shape",
+    yaxis_title="Read Time<br>(log(seconds))",
+    yaxis_type="log",
+    width=1300,
+    legend=dict(
+        x=0.02,
+        y=0.98,
+        xanchor="left",
+        yanchor="top",
+        bgcolor="rgba(255,255,255,0.8)",
+    ),
+    margin=dict(r=80, t=80, l=80, b=80),
     bargap=0.15,
     bargroupgap=0.05,
+    font=dict(
+        size=18,
+    )
 )
-
-
-pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")))
+pio.write_image(
+    fig,
+    (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")),
+)
 Image(url=img_file)
 
 # + papermill={"duration": 0.260285, "end_time": "2025-09-03T21:57:22.537386", "exception": false, "start_time": "2025-09-03T21:57:22.277101", "status": "completed"}
@@ -1550,58 +1579,149 @@ cols = {
     ),
 }
 
-# Build long dataframe with mean/min/max → error bars
+# --- Build long dataframe with mean/min/max → error bars ---
 records = []
 for fmt, (mean_col, min_col, max_col) in cols.items():
     tmp = result[[key, mean_col, min_col, max_col]].copy()
     tmp["format"] = fmt
-    tmp.rename(
-        columns={mean_col: "mean", min_col: "min", max_col: "max"},
-        inplace=True,
-    )
+    tmp.rename(columns={mean_col: "mean", min_col: "min", max_col: "max"}, inplace=True)
     records.append(tmp)
 
 long = pd.concat(records, ignore_index=True).dropna(subset=["mean"])
-
-# Error bars: distance from mean to max/min
 long["err_plus"] = (long["max"] - long["mean"]).clip(lower=0)
 long["err_minus"] = (long["mean"] - long["min"]).clip(lower=0)
 
-# Preserve your original x ordering (reversed)
-x_order = result[key].iloc[::-1].drop_duplicates().tolist()
-pos = {cat: i for i, cat in enumerate(x_order)}
-long_sorted = long.assign(xpos=long[key].map(pos)).sort_values(["format", "xpos"])
+# --- Orders ---
+# X groups in the order they appear in the data (keep as-is)
+x_seen = list(pd.unique(long[key]))
+# If you want reversed x later, switch to: x_seen = x_seen[::-1]
 
-rev_order = x_order[::-1] 
+# Fixed bar/legend order inside each group
+format_order = ["CSV (GZIP)", "SQLite", "AnnData (H5AD - ZSTD)", "Parquet (ZSTD)"]
+long["format"] = pd.Categorical(long["format"], categories=format_order, ordered=True)
 
-fig = px.bar(
-    long_sorted,
-    x=key,                # categories (data shapes)
-    y="mean",             # bar height (read time)
-    color="format",       # one bar per format within each category
-    barmode="group",
-    error_y="err_plus",   # max - mean
-    error_y_minus="err_minus",  # mean - min
-   category_orders={key: rev_order, "format": list(cols.keys())},
-    labels={key: "Data Shape", "mean": "Write and read time (s)(log)"},
-    width=1300,
-    title="File format write and read time duration (full dataset) with error bars",
-    log_y=True
-)
+# Sort table to make traces stable (x then format)
+long_sorted = long.sort_values([key, "format"])
 
-# Styling (no markers in bar charts)
+# --- Build fig with explicit trace order (guarantees bar order) ---
+fig = go.Figure()
+for fmt in format_order:
+    sub = long_sorted[long_sorted["format"] == fmt]
+    # Plotly needs arrays (lists); ensure aligned per x order
+    # Reindex each sub to x_seen to keep empty categories aligned if any missing
+    sub = sub.set_index(key).reindex(x_seen)
+    fig.add_trace(
+        go.Bar(
+            name=fmt,
+            x=[str(x) for x in x_seen],  # safe labels (tuples → str)
+            y=sub["mean"],
+            error_y=dict(
+                type="data",
+                array=sub["err_plus"],
+                arrayminus=sub["err_minus"],
+                visible=True,
+            ),
+            # offsetgroup ensures grouped bars align even with missing categories
+            offsetgroup=fmt,
+        )
+    )
+
 fig.update_layout(
-    legend=dict(x=1.02, y=1, xanchor="left", yanchor="top",
-                bgcolor="rgba(255,255,255,0.8)"),
-    margin=dict(r=220),
-    font=dict(size=16),
+    barmode="group",
+    title="File format write and read time duration (full dataset) with error bars",
+    xaxis_title="Data Shape",
+    yaxis_title="Write and read time<br>(log(seconds))",
+    yaxis_type="log",
+    width=1300,
+    legend=dict(
+        x=0.02,
+        y=0.98,
+        xanchor="left",
+        yanchor="top",
+        bgcolor="rgba(255,255,255,0.8)",
+    ),
+    margin=dict(r=80, t=80, l=80, b=80),
     bargap=0.15,
     bargroupgap=0.05,
+    font=dict(
+        size=18,
+    )
 )
 
 
-pio.write_image(fig, (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")))
+pio.write_image(
+    fig,
+    (img_file := file_read_time_all_image.replace(".png", "-reduced-nonfacet-bar.png")),
+)
 Image(url=img_file)
-# -
 
+# +
+# summarize read/write performance data
+key = "dataframe_shape (rows, cols)"
+mean_cols = {
+    "CSV (GZIP)": "csv_write_and_read_time (secs) mean",
+    "SQLite": "sqlite_write_and_read_time (secs) mean",
+    "AnnData (H5AD - ZSTD)": "anndata_h5ad_zstd_write_and_read_time (secs) mean",
+    "Parquet (ZSTD)": "parquet_zstd_write_and_read_time (secs) mean",
+}
 
+# Build a wide table of the mean read times by data shape
+wide = result[[key] + list(mean_cols.values())].rename(
+    columns={v: k for k, v in mean_cols.items()}
+)
+
+# Compute "% faster" for Parquet vs each baseline, per shape
+for baseline in ["CSV (GZIP)", "SQLite", "AnnData (H5AD - ZSTD)"]:
+    wide[f"Parquet vs {baseline} (% faster)"] = (
+        (wide[baseline] - wide["Parquet (ZSTD)"]) / wide[baseline] * 100
+    )
+
+cols = [
+    key,
+    "Parquet vs CSV (GZIP) (% faster)",
+    "Parquet vs SQLite (% faster)",
+    "Parquet vs AnnData (H5AD - ZSTD) (% faster)",
+]
+percent_by_shape = wide[cols].sort_values(key)
+print(percent_by_shape)
+print(
+    "Parquet percent average performance increase over AnnData (zstd):",
+    percent_by_shape["Parquet vs AnnData (H5AD - ZSTD) (% faster)"].mean(),
+)
+
+# +
+# summarize filesize data
+key = "dataframe_shape (rows, cols)"
+target = "AnnData (H5AD - ZSTD)"  # the format we're evaluating
+
+# Start from your 'stats' (mean bytes by [shape, format])
+# -> make it wide: one column per format
+wide = stats.pivot(index=key, columns="format", values="bytes").reset_index()
+
+# Baselines are all formats except the key and target
+baselines = [c for c in wide.columns if c not in [key, target]]
+
+# Compute % less storage for AnnData vs each baseline (per shape)
+for b in baselines:
+    wide[f"{target} vs {b} (% less)"] = (wide[b] - wide[target]) / wide[b] * 100
+
+# Keep only display columns (shape + percent columns)
+percent_cols = [c for c in wide.columns if c.endswith("(% less)")]
+table = wide[[key] + percent_cols].copy()
+
+# (Optional) order rows to match your previous x_order, if you have it:
+# table = table.set_index(key).loc[x_order].reset_index()
+
+# Add an Average % row (simple arithmetic mean across shapes)
+avg = table[percent_cols].mean(numeric_only=True)
+avg_row = pd.DataFrame([{key: "Average (across shapes)"} | avg.to_dict()])
+table_with_avg = pd.concat([table, avg_row], ignore_index=True)
+
+# Nice formatting (1 decimal place + % sign)
+display_table = table_with_avg.copy()
+for c in percent_cols:
+    display_table[c] = display_table[c].map(
+        lambda x: f"{x:.1f}%" if pd.notna(x) else "–"
+    )
+
+display_table

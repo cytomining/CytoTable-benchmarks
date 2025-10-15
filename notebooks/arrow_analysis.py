@@ -129,7 +129,7 @@ fig.update_layout(
     legend_title_text="In-memory Read Duration",
     legend=dict(x=0.72, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
     font=dict(
-        size=17.5,  # global font size
+        size=18,  # global font size
     ),
 )
 
@@ -157,7 +157,7 @@ fig.update_layout(
     legend_title_text="In-memory Data Size",
     legend=dict(x=0.72, y=0.02, bgcolor="rgba(255,255,255,0.8)"),
     font=dict(
-        size=20,  # global font size
+        size=18,  # global font size
     ),
 )
 
