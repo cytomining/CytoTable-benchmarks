@@ -220,6 +220,7 @@ def generate_format_comparison_plot(
     *,
     comparison_col: Optional[str] = None,
     color_palette: Optional[List[str]] = None,
+    y_axis_title: str,
 ):
     """
     Faceted Plotly line plot (one facet per 'format') with error bars.
@@ -328,7 +329,7 @@ def generate_format_comparison_plot(
         yshift=-60,
     )
     fig.add_annotation(
-        text="Write and read time<br>(log(seconds))",
+        text=y_axis_title,
         xref="paper",
         yref="paper",
         x=0.009,
@@ -864,6 +865,7 @@ generate_format_comparison_plot(
     title="File format write time duration (seconds)",
     save_file=file_write_time_image,
     comparison_col="parquet_zstd_write_time (secs) mean",
+    y_axis_title="Write time<br>(log(seconds))"
 )
 Image(url=file_write_time_image)
 
@@ -921,6 +923,7 @@ generate_format_comparison_plot(
     title="File format write time duration (seconds)",
     save_file=file_write_time_image.replace(".parquet", "-reduced.parquet"),
     comparison_col="parquet_zstd_write_time (secs) mean",
+    y_axis_title="Write time<br>(log(seconds))"
 )
 Image(url=file_write_time_image.replace(".parquet", "-reduced.parquet"))
 
@@ -1155,6 +1158,7 @@ generate_format_comparison_plot(
     title="File format read time duration (full dataset) (seconds)",
     save_file=file_read_time_all_image,
     comparison_col="parquet_zstd_read_time_all (secs) mean",
+    y_axis_title="Read time<br>(log(seconds))"
 )
 Image(url=file_read_time_all_image)
 
@@ -1209,6 +1213,7 @@ generate_format_comparison_plot(
     title="File format read time duration (full dataset) (seconds)",
     save_file=file_read_time_all_image.replace(".png", "-reduced.png"),
     comparison_col="parquet_zstd_read_time_all (secs) mean",
+    y_axis_title="Read time<br>(log(seconds))"
 )
 Image(url=file_read_time_all_image.replace(".png", "-reduced.png"))
 
@@ -1289,7 +1294,7 @@ fig.update_layout(
     barmode="group",
     title="File format read time duration (full dataset) with error bars",
     xaxis_title="Data Shape",
-    yaxis_title="Read Time<br>(log(seconds))",
+    yaxis_title="Read time<br>(log(seconds))",
     yaxis_type="log",
     width=1300,
     legend=dict(
@@ -1383,6 +1388,7 @@ generate_format_comparison_plot(
     title="File format read time duration (one column) (seconds)",
     save_file=file_read_time_one_image,
     comparison_col="parquet_zstd_read_time_one (secs) mean",
+    y_axis_title="Read time<br>(log(seconds))"
 )
 Image(url=file_read_time_one_image)
 
@@ -1437,6 +1443,7 @@ generate_format_comparison_plot(
     title="File format read time duration (one column) (seconds)",
     save_file=file_read_time_one_image.replace(".png", "-reduced.png"),
     comparison_col="parquet_zstd_read_time_one (secs) mean",
+    y_axis_title="Read time<br>(log(seconds))"
 )
 Image(url=file_read_time_one_image.replace(".png", "-reduced.png"))
 
@@ -1514,6 +1521,7 @@ generate_format_comparison_plot(
     title="File format read and write time duration (full dataset) (seconds)",
     save_file=file_read_time_write_and_read_time_image,
     comparison_col="parquet_zstd_write_and_read_time (secs) mean",
+    y_axis_title="Write and read time<br>(log(seconds))"
 )
 Image(url=file_read_time_write_and_read_time_image)
 
@@ -1571,6 +1579,7 @@ generate_format_comparison_plot(
     title="File format read and write time duration (full dataset) (seconds)",
     save_file=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"),
     comparison_col="parquet_zstd_write_and_read_time (secs) mean",
+    y_axis_title="Write and read time<br>(log(seconds))"
 )
 Image(url=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"))
 
