@@ -24,7 +24,7 @@ import pathlib
 import shutil
 import string
 import warnings
-from typing import Dict, Literal
+from typing import Dict, List, Literal, Optional, Tuple
 
 import anndata as ad
 import duckdb
@@ -213,14 +213,28 @@ def read_anndata(
 
 
 def generate_format_comparison_plot(
-    df: pd.DataFrame, cols: Dict[str, tuple], title: str, save_file: str
+    df: pd.DataFrame,
+    cols: Dict[str, Tuple[str, str, str]],
+    title: str,
+    save_file: str,
+    *,
+    comparison_col: Optional[str] = None,
+    color_palette: Optional[List[str]] = None,
 ):
-    """ """
+    """
+    Faceted Plotly line plot (one facet per 'format') with error bars.
+    If `comparison_col` is given:
+      • The facet whose mean column == `comparison_col` is colored black (and
+        appears once in the legend as that format).
+      • A black comparison line (no legend entry) is overlaid in every other
+        facet for side-by-side visual comparison.
+    """
     key = "dataframe_shape (rows, cols)"
 
+    # ---- Build long-form stats with asymmetric errors ----
     parts = []
     for fmt, (mcol, mincol, maxcol) in cols.items():
-        tmp = result[[key, mcol, mincol, maxcol]].copy()
+        tmp = df[[key, mcol, mincol, maxcol]].copy()
         tmp["format"] = fmt
         tmp.rename(columns={mcol: "mean", mincol: "min", maxcol: "max"}, inplace=True)
         tmp["err_plus"] = tmp["max"] - tmp["mean"]
@@ -229,12 +243,38 @@ def generate_format_comparison_plot(
 
     stats = pd.concat(parts, ignore_index=True)
 
-    x_order = result[key].tolist()  # not reversed; use iloc[::-1] to reverse
-    pos = {k: i for i, k in enumerate(x_order)}  # category → position index
-
-    # 2) give each row its x position and sort per-trace
+    # Keep x categories in the original order present in df
+    x_order = df[key].tolist()
+    pos = {k: i for i, k in enumerate(x_order)}
     stats = stats.assign(xpos=stats[key].map(pos)).sort_values(["format", "xpos"])
 
+    # Map format -> its mean column (so we can find the comparison format)
+    format_to_mcol = {fmt: mcol for fmt, (mcol, _mn, _mx) in cols.items()}
+
+    # ---- Color map: comparison format -> black; others -> palette ----
+    color_map = None
+    compare_format = None
+    if comparison_col is not None:
+        for fmt, (mcol, _mn, _mx) in cols.items():
+            if mcol == comparison_col:
+                compare_format = fmt
+                break
+        if compare_format is None:
+            raise KeyError(
+                f"comparison_col '{comparison_col}' not found in cols mapping."
+            )
+
+        remaining_formats = [fmt for fmt in cols.keys() if fmt != compare_format]
+        if color_palette is None:
+            color_palette = px.colors.qualitative.Plotly
+        # Cycle if needed
+        cycle = remaining_formats + []  # copy
+        repeats = (len(cycle) // len(color_palette)) + 1
+        palette_expanded = (color_palette * repeats)[: len(cycle)]
+        color_map = {fmt: c for fmt, c in zip(remaining_formats, palette_expanded)}
+        color_map[compare_format] = "black"
+
+    # ---- Base figure: one trace per facet (its own format only) ----
     fig = px.line(
         stats,
         x=key,
@@ -244,113 +284,24 @@ def generate_format_comparison_plot(
         error_y_minus="err_minus",
         markers=True,
         category_orders={key: x_order},
-        labels={
-            key: "Data Shape",
-            "mean": "Seconds (log)",
-        },  # we'll override titles later
+        labels={key: "Data Shape", "mean": "Seconds (log)"},
         log_y=True,
-        title=title,
+        title=None,
         facet_col="format",
         facet_col_wrap=4,
-        color_discrete_sequence=color_palette,
+        color_discrete_map=color_map,
         render_mode="webgl",
         width=1200,
         height=500,
     )
 
-    # Remove facet headers
+    # Remove default facet headers and axis titles
     fig.for_each_annotation(lambda a: a.update(text=""))
-    for k in list(fig.layout):
-        if k.startswith("xaxis") or k.startswith("yaxis"):
-            fig.layout[k].title = None
+    for k_layout in list(fig.layout):
+        if k_layout.startswith("xaxis") or k_layout.startswith("yaxis"):
+            fig.layout[k_layout].title = None
 
-    # (Optional) if you still have facet headers, hide them
-    fig.for_each_annotation(lambda a: a.update(text=""))
-
-    # make sure main title is not center aligned
-    # Remove the built-in title
-    fig.update_layout(title_text=None)
-
-    # Add a figure-level title annotation (left-aligned)
-    fig.add_annotation(
-        text="File format read time duration (one column) (seconds)",
-        xref="paper",
-        yref="paper",
-        x=0.0,
-        y=1.0,
-        xanchor="left",
-        yanchor="bottom",
-        showarrow=False,
-        font=dict(size=20),
-        align="left",
-        yshift=32,
-    )
-
-    def _axis_key(ref: str) -> str:
-        # "x"   -> "xaxis",  "x2" -> "xaxis2"
-        # "y"   -> "yaxis",  "y2" -> "yaxis2"
-        return f"{ref[0]}axis" if len(ref) == 1 else f"{ref[0]}axis{ref[1:]}"
-
-    def add_subplot_subtitles(
-        fig, label_by_trace_name=True, rel_offset=0.02, font_size=12
-    ):
-        """
-        Add subplot subtitles centered above each facet.
-
-        Parameters
-        ----------
-        fig : plotly.graph_objects.Figure
-        label_by_trace_name : bool, default=True
-            If True, use trace.name for the text.
-        rel_offset : float, default=0.02
-            Fraction of subplot height to push the label above the top.
-            Smaller values = closer to the plot.
-        font_size : int, default=12
-            Font size for subtitles.
-        """
-        fig.for_each_annotation(
-            lambda a: a.update(text="")
-        )  # clear default facet headers
-        seen = set()
-
-        def _axis_key(ref: str) -> str:
-            return f"{ref[0]}axis" if len(ref) == 1 else f"{ref[0]}axis{ref[1:]}"
-
-        for tr in fig.data:
-            key = (tr.xaxis, tr.yaxis)
-            if key in seen:
-                continue
-            seen.add(key)
-
-            xaxis = _axis_key(tr.xaxis)
-            yaxis = _axis_key(tr.yaxis)
-            xdom = fig.layout[xaxis].domain
-            ydom = fig.layout[yaxis].domain
-
-            # Offset proportional to subplot height
-            height = ydom[1] - ydom[0]
-            y = ydom[1] + rel_offset * height
-            x = (xdom[0] + xdom[1]) / 2
-
-            text = tr.name if label_by_trace_name else "subplot"
-            color = getattr(tr.line, "color", None) or getattr(
-                getattr(tr, "marker", {}), "color", None
-            )
-
-            fig.add_annotation(
-                xref="paper",
-                yref="paper",
-                x=x,
-                y=y,
-                text=text,
-                showarrow=False,
-                xanchor="center",
-                yanchor="bottom",
-                font=dict(size=font_size),
-            )
-
-    add_subplot_subtitles(fig, label_by_trace_name=True)
-
+    # ---- Figure-level titles/labels ----
     fig.add_annotation(
         text=title,
         xref="paper",
@@ -364,26 +315,23 @@ def generate_format_comparison_plot(
         align="left",
         yshift=32,
     )
-
     fig.add_annotation(
         text="Data Shape",
         xref="paper",
         yref="paper",
         x=0.5,
-        y=0,
+        y=0.0,
         xanchor="center",
         yanchor="top",
         showarrow=False,
         font=dict(size=16),
         yshift=-60,
     )
-
-    # Add ONE centered y-axis title for the whole figure
     fig.add_annotation(
         text="Seconds (log)",
         xref="paper",
         yref="paper",
-        x=0,
+        x=0.0,
         y=0.5,
         xanchor="right",
         yanchor="middle",
@@ -392,7 +340,70 @@ def generate_format_comparison_plot(
         font=dict(size=16),
         xshift=-50,
     )
+
+    # ---- Subplot subtitles (format names) ----
+    def _axis_key(ref: str) -> str:
+        return f"{ref[0]}axis" if len(ref) == 1 else f"{ref[0]}axis{ref[1:]}"
+
+    seen_axes = set()
+    for tr in fig.data:
+        axes_key = (tr.xaxis, tr.yaxis)
+        if axes_key in seen_axes:
+            continue
+        seen_axes.add(axes_key)
+
+        xaxis = _axis_key(tr.xaxis)
+        yaxis = _axis_key(tr.yaxis)
+        xdom = fig.layout[xaxis].domain
+        ydom = fig.layout[yaxis].domain
+        x_center = (xdom[0] + xdom[1]) / 2
+        y_top = ydom[1] + 0.02 * (ydom[1] - ydom[0])
+        fig.add_annotation(
+            xref="paper",
+            yref="paper",
+            x=x_center,
+            y=y_top,
+            text=tr.name or "",
+            showarrow=False,
+            xanchor="center",
+            yanchor="bottom",
+            font=dict(size=12),
+        )
+
+    # ---- Overlay the comparison line in *other* facets ----
+    if comparison_col is not None:
+        comp_df = df[[key, comparison_col]].dropna(subset=[comparison_col]).copy()
+        if not comp_df.empty:
+            comp_df["xpos"] = comp_df[key].map(pos)
+            comp_df = comp_df.sort_values("xpos")
+
+            for tr in fig.data:
+                facet_name = tr.name  # equals the format for that facet
+                if facet_name == compare_format:
+                    # In this facet, the base trace already shows the comparison
+                    # format, and it's colored black via color_discrete_map.
+                    continue
+
+                # Add black comparison line to this facet (no legend)
+                fig.add_scatter(
+                    x=comp_df[key],
+                    y=comp_df[comparison_col],
+                    mode="lines+markers",
+                    name=f"{compare_format} (comparison)",  # legend suppressed
+                    line=dict(color="black", width=2),
+                    marker=dict(color="black", size=6),
+                    showlegend=False,
+                    xaxis=tr.xaxis,
+                    yaxis=tr.yaxis,
+                    hovertemplate=(
+                        f"{facet_name} vs {compare_format}<br>"
+                        f"{key}: %{{x}}<br>"
+                        f"{compare_format}: %{{y:.3f}}<extra></extra>"
+                    ),
+                )
+
     pio.write_image(fig, save_file)
+    return fig
 
 
 # -
@@ -852,6 +863,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format write time duration (seconds)",
     save_file=file_write_time_image,
+    comparison_col="parquet_zstd_write_time (secs) mean",
 )
 Image(url=file_write_time_image)
 
@@ -908,6 +920,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format write time duration (seconds)",
     save_file=file_write_time_image.replace(".parquet", "-reduced.parquet"),
+    comparison_col="parquet_zstd_write_time (secs) mean",
 )
 Image(url=file_write_time_image.replace(".parquet", "-reduced.parquet"))
 
@@ -1051,13 +1064,16 @@ fig.update_layout(legend_traceorder="reversed")
 fig.update_layout(
     legend_title_text=None,
     legend=dict(
-        x=0.02, y=0.98, xanchor="left", yanchor="top",
+        x=0.02,
+        y=0.98,
+        xanchor="left",
+        yanchor="top",
         bgcolor="rgba(255,255,255,0.8)",
     ),
     margin=dict(r=80, t=80, l=80, b=80),
     font=dict(size=18),
-    bargap=0.15,      # space between groups
-    bargroupgap=0.05, # space within a group
+    bargap=0.15,  # space between groups
+    bargroupgap=0.05,  # space within a group
 )
 
 # Keep the same left-to-right x ordering convention as before
@@ -1138,6 +1154,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read time duration (full dataset) (seconds)",
     save_file=file_read_time_all_image,
+    comparison_col="parquet_zstd_read_time_all (secs) mean",
 )
 Image(url=file_read_time_all_image)
 
@@ -1191,6 +1208,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read time duration (full dataset) (seconds)",
     save_file=file_read_time_all_image.replace(".png", "-reduced.png"),
+    comparison_col="parquet_zstd_read_time_all (secs) mean",
 )
 Image(url=file_read_time_all_image.replace(".png", "-reduced.png"))
 
@@ -1286,7 +1304,7 @@ fig.update_layout(
     bargroupgap=0.05,
     font=dict(
         size=18,
-    )
+    ),
 )
 pio.write_image(
     fig,
@@ -1364,6 +1382,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read time duration (one column) (seconds)",
     save_file=file_read_time_one_image,
+    comparison_col="parquet_zstd_read_time_one (secs) mean",
 )
 Image(url=file_read_time_one_image)
 
@@ -1417,6 +1436,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read time duration (one column) (seconds)",
     save_file=file_read_time_one_image.replace(".png", "-reduced.png"),
+    comparison_col="parquet_zstd_read_time_one (secs) mean",
 )
 Image(url=file_read_time_one_image.replace(".png", "-reduced.png"))
 
@@ -1493,6 +1513,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read and write time duration (full dataset) (seconds)",
     save_file=file_read_time_write_and_read_time_image,
+    comparison_col="parquet_zstd_write_and_read_time (secs) mean",
 )
 Image(url=file_read_time_write_and_read_time_image)
 
@@ -1549,6 +1570,7 @@ generate_format_comparison_plot(
     cols=cols,
     title="File format read and write time duration (full dataset) (seconds)",
     save_file=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"),
+    comparison_col="parquet_zstd_write_and_read_time (secs) mean",
 )
 Image(url=file_read_time_write_and_read_time_image.replace(".png", "-reduced.png"))
 
@@ -1645,7 +1667,7 @@ fig.update_layout(
     bargroupgap=0.05,
     font=dict(
         size=18,
-    )
+    ),
 )
 
 
